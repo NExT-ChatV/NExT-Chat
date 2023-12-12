@@ -111,6 +111,12 @@ If you can connect to huggingface, just run:
 CUDA_VISIBLE_DEVICES="0" python mllm/demo/bash_demo.py AoZhang/nextchat-7b-336  openai/clip-vit-large-patch14-336
 ```
 
+You can also initialize the model by yourself:
+```python
+from mllm.demo.demo_util import NextChatInference
+model = NextChatInference(model_weight_path, vit_path, 576)
+```
+
 You will get into the IPython mode. Then use the model like:
 ```python
 input = {"text": "What is the possible relationship between the two people? Please include object locations.", "image": "./COCO_val2014_000000222628.jpg"}
