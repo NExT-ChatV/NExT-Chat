@@ -111,6 +111,12 @@ If you can connect to huggingface, just run:
 CUDA_VISIBLE_DEVICES="0" python mllm/demo/bash_demo.py AoZhang/nextchat-7b-336  openai/clip-vit-large-patch14-336
 ```
 
+You will get into the IPython mode. Then use the model like:
+```python
+input = {"text": "What is the possible relationship between the two people? Please include object locations.", "image": "./COCO_val2014_000000222628.jpg"}
+response, boxes, masks, ret_img = model(input)
+```
+
 ## Easy Run
 We have our old models (v0 versions) in the modelscope.
 Please first install `pip install modelscope`.
