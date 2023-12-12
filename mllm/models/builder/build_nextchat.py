@@ -128,7 +128,7 @@ def load_pretrained_nextchat(model_args, training_args, **kwargs) -> Tuple[nn.Mo
         model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
         _fast_init=False,
-        sam_path="/home/zhangao/model/sam/sam_vit_h_4b8939.pth",
+        sam_path=model_args.sam_path,
         # mm_vision_tower=model_args.vision_tower,
         **kwargs
     )

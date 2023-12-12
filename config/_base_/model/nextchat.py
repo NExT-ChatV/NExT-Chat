@@ -6,6 +6,7 @@ model_args = dict(
     cache_dir=None,
     model_name_or_path=None,
     vision_tower=r'openai/clip-vit-large-patch14-336',
+    sam_path='/path/to/sam_vit_h_4b8939.pth',
     pretrain_mm_mlp_adapter=None,
     pretrained_mm_projector=None,
 
