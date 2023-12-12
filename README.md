@@ -88,7 +88,7 @@ Please refer to [DATA.md](DATA.md).
 ## Demo
 Please first download the model weights from [huggingface](https://huggingface.co/AoZhang/nextchat-7b-336/tree/main) or our [link](https://thunlp.oss-cn-qingdao.aliyuncs.com/nextchat-7b-336.tar.gz).
 We also use OpenAI CLIP [ViT model](https://huggingface.co/openai/clip-vit-large-patch14-336/tree/main) as the visual encoder. Please make sure that you can connect to huggingface or you can download it to your local directory.
-Then, download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
+Then, download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
 
 
 **Web Demo**
@@ -135,7 +135,7 @@ We show the results here:
 </p>
 
 Please config the `vision_tower` in the [config/_base_/model/nextchat.py]([config/_base_/model/nextchat.py]) to the path of OpenAI CLIP, if you can not connect to huggingface.
-Make sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
+Make sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
 ```shell
 bash eval_res.sh /path/to/checkpoint
 ```
@@ -151,7 +151,7 @@ If you have some insights, welcome to discuss.
 </p>
 
 Please config the `vision_tower` in the [config/_base_/model/nextchat.py]([config/_base_/model/nextchat.py]) to the path of OpenAI CLIP, if you can not connect to huggingface.
-Make sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
+Make sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
 ```shell
 bash eval_rec.sh /path/to/checkpoint
 ```
@@ -162,7 +162,7 @@ bash eval_rec.sh /path/to/checkpoint
 </p>
 
 Please config the `vision_tower` in the [config/_base_/model/nextchat.py]([config/_base_/model/nextchat.py]) to the path of OpenAI CLIP, if you can not connect to huggingface.
-Make sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
+Make sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
 ```shell
 bash eval_pope.sh /path/to/checkpoint
 ```
@@ -174,14 +174,14 @@ bash eval_pope.sh /path/to/checkpoint
 </p>
 
 Please config the `vision_tower` in the [config/_base_/model/nextchat.py]([config/_base_/model/nextchat.py]) to the path of OpenAI CLIP, if you can not connect to huggingface.
-Make sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
+Make sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
 ```shell
 bash eval_reg_cap.sh /path/to/checkpoint
 ```
 
 ## Training
 Please config the `vision_tower` in the [config/_base_/model/nextchat.py]([config/_base_/model/nextchat.py]) to the path of OpenAI CLIP, if you can not connect to huggingface.
-Make sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
+Make sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.
 
 Our training consists of 3 stages:
 1. VL+Detection Pre-training
