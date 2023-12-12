@@ -1,0 +1,41 @@
+RES_TEST_COMMON_CFG = dict(
+    type='RESDataset',
+    template_file=r'{{fileDirname}}/template/REC.json',
+    image_folder=r'/data/public/multimodal/multimodal_data/coco_imgs/train2014/',
+    max_dynamic_size=None,
+)
+
+DEFAULT_TEST_RES_VARIANT = dict(
+    RES_REFCOCOG_UMD_TEST=dict(
+        **RES_TEST_COMMON_CFG,
+        filename=r'{{fileDirname}}/../../../data/RES_refcocog_umd_test.jsonl',
+    ),
+    RES_REFCOCOA_UNC_TESTA=dict(
+        **RES_TEST_COMMON_CFG,
+        filename=r'{{fileDirname}}/../../../data/RES_refcoco+_unc_testA.jsonl',
+    ),
+    RES_REFCOCOA_UNC_TESTB=dict(
+        **RES_TEST_COMMON_CFG,
+        filename=r'{{fileDirname}}/../../../data/RES_refcoco+_unc_testB.jsonl',
+    ),
+    RES_REFCOCO_UNC_TESTA=dict(
+        **RES_TEST_COMMON_CFG,
+        filename=r'{{fileDirname}}/../../../data/RES_refcoco_unc_testA.jsonl',
+    ),
+    RES_REFCOCO_UNC_TESTB=dict(
+        **RES_TEST_COMMON_CFG,
+        filename=r'{{fileDirname}}/../../../data/RES_refcoco_unc_testB.jsonl',
+    ),
+    RES_REFCOCOG_UMD_VAL=dict(
+        **RES_TEST_COMMON_CFG,
+        filename=r'{{fileDirname}}/../../../data/RES_refcocog_umd_val.jsonl',
+    ),
+    RES_REFCOCOA_UNC_VAL=dict(
+        **RES_TEST_COMMON_CFG,
+        filename=r'{{fileDirname}}/../../../data/RES_refcoco+_unc_val.jsonl',
+    ),
+    RES_REFCOCO_UNC_VAL=dict(
+        **RES_TEST_COMMON_CFG,
+        filename=r'{{fileDirname}}/../../../data/RES_refcoco_unc_val.jsonl',
+    ),
+)

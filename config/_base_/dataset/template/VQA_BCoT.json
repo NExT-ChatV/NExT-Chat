@@ -1,0 +1,7 @@
+[
+  "<question> <image> Please include mentioned object locations.",
+  "<image> <question> Please include mentioned object locations.",
+  "<image> <question> Please mention related object locations.",
+  "<image> <question> Please mention object locations.",
+  "<image> <question> Please explain and include related object locations."
+]

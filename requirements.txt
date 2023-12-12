@@ -1,0 +1,4 @@
+transformers==4.31.0
+gradio==3.48.0
+datasets
+mmengine
