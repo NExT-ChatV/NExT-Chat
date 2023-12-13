@@ -1,7 +1,7 @@
 from .flickr import FlickrParser, FlickrDataset
 from .rec import RECDataset, RECComputeMetrics
 from .res import RESDataset, RESComputeMetrics
-from .reg import REGDataset, REGCapComputeMetrics
+from .reg import REGDataset, REGCapComputeMetrics, GCDataset
 from .caption import CaptionDataset
 from .instr import InstructDataset
 from .gqa import GQADataset, GQAComputeMetrics

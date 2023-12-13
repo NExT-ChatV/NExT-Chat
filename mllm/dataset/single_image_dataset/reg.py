@@ -64,6 +64,10 @@ class REGDataset(MInstrDataset):
         return ret
 
 
+@DATASETS.register_module()
+class GCDataset(REGDataset):
+    pass
+
 
 @METRICS.register_module()
 class REGCapComputeMetrics(BaseComputeMetrics):
