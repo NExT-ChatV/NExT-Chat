@@ -1,6 +1,6 @@
 POPE_TEST_COMMON_CFG = dict(
     type='POPEVQADataset',
-    image_folder=r'/data/public/multimodal/multimodal_data/coco_imgs/val',
+    image_folder=r'/data/public/multimodal/multimodal_data/coco_imgs/val2014',
 )
 
 DEFAULT_TEST_POPE_VARIANT = dict(
