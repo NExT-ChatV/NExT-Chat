@@ -144,7 +144,7 @@ class NextChatForSegLM(NextChatForCausalLM):
         )
 
         loc_hidden_states = []
-        if hasattr(outputs, "beam_indices"):
+        if hasattr(outputs, "beam_indices"): # beam size > 1
             vision_tower = self.model.get_vision_tower()
             loc_ids = (outputs.sequences == vision_tower.config.at_token).nonzero()
             hidden_states = outputs.hidden_states
@@ -158,6 +158,16 @@ class NextChatForSegLM(NextChatForCausalLM):
                 loc_hidden_states.append(loc_h.squeeze())
             if len(loc_hidden_states) > 0:
                 loc_hidden_states = torch.stack(loc_hidden_states)
+        else: # beam_size == 1
+            vision_tower = self.model.get_vision_tower()
+            loc_ids = (outputs.sequences == vision_tower.config.at_token).nonzero()
+            hidden_states = outputs.hidden_states
+            for lid in loc_ids:
+                outputs.sequences[lid[0], lid[1]+1] = vision_tower.config.box_token
+                loc_h = hidden_states[lid[1]][-1]
+                loc_hidden_states.append(loc_h.squeeze())
+            if len(loc_hidden_states) > 0:
+                loc_hidden_states = torch.stack(loc_hidden_states)
 
         pred_masks, pred_locs, iou_predictions = None, None, None
         if len(loc_hidden_states)>0:
@@ -167,7 +177,8 @@ class NextChatForSegLM(NextChatForCausalLM):
             prompt_states = self.seg_prompt_mlp(loc_hidden_states)
             prompt_states = prompt_states.view(prompt_states.size(0), -1, self.sam_prompt_dim)
             dtype = self.sam.model.image_encoder.patch_embed.proj.weight.dtype
-            pred_masks, iou_predictions = self.sam(images_sam.type(dtype), prompt_states, boxes=pred_locs.type(dtype)*1024)
+            if images_sam is not None:
+                pred_masks, iou_predictions = self.sam(images_sam.type(dtype), prompt_states, boxes=pred_locs.type(dtype)*1024)
         return outputs.sequences, pred_masks, iou_predictions, pred_locs
 
     def prepare_inputs_for_generation(

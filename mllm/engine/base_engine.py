@@ -134,7 +134,7 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
                     # generated_tokens = self.tensor2token(generated_tokens)
                 else:
                     generated_tokens = self.model.generate(**gen_kwargs)
-                    if "masks_sam" not in inputs:
+                    if "masks_sam" not in inputs and type(generated_tokens) is tuple:
                         generated_tokens = generated_tokens[0]
                     # generated_tokens = self.tensor2token(generated_tokens)
 
