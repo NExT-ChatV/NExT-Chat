@@ -241,23 +241,23 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
 
         # decode text and save to json takes forever for big test set
         os.makedirs(self.args.output_dir, exist_ok=True)
-        with open(os.path.join(self.args.output_dir, f'{file_key_prefix}_extra_prediction.jsonl'), 'a', encoding="utf-8") as g:
-            for p, t, pi, ti in tqdm(
-                    zip(preds, targets, origin_preds, origin_targets),
-                    total=len(preds), desc=f"saving prediction for {file_key_prefix}",
-            ):
-                p[p < 0] = self.tokenizer.pad_token_id
-                t[t < 0] = self.tokenizer.pad_token_id
-                p = self.tokenizer.decode(p, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-                t = self.tokenizer.decode(t, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-                obj = dict(
-                    pred=p,
-                    target=t,
-                    # pred_id=pi.tolist(),
-                    # target_id=ti.tolist(),
-                )
-                g.write(json.dumps(obj) + '\n')
-                g.flush()
+        # with open(os.path.join(self.args.output_dir, f'{file_key_prefix}_extra_prediction.jsonl'), 'a', encoding="utf-8") as g:
+        #     for p, t, pi, ti in tqdm(
+        #             zip(preds, targets, origin_preds, origin_targets),
+        #             total=len(preds), desc=f"saving prediction for {file_key_prefix}",
+        #     ):
+        #         p[p < 0] = self.tokenizer.pad_token_id
+        #         t[t < 0] = self.tokenizer.pad_token_id
+        #         p = self.tokenizer.decode(p, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        #         t = self.tokenizer.decode(t, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        #         obj = dict(
+        #             pred=p,
+        #             target=t,
+        #             # pred_id=pi.tolist(),
+        #             # target_id=ti.tolist(),
+        #         )
+        #         g.write(json.dumps(obj) + '\n')
+        #         g.flush()
 
     # transformers + FSDP + saving model -> cuda OOM for small memory gpu
     # refer: https://github.com/tatsu-lab/stanford_alpaca/issues/65
