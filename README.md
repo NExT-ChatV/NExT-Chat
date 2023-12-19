@@ -3,9 +3,7 @@ NExT-Chat: An LMM for Chat, Detection and Segmentation
 
 [Ao Zhang](https://waxnkw.github.io/), [Yuan Yao](https://yaoyuanthu.github.io/), [Wei Ji](https://jiwei0523.github.io/), [Zhiyuan Liu](https://nlp.csai.tsinghua.edu.cn/~lzy/), and [Tat-Seng Chua](https://www.chuatatseng.com/)
 
-**National University of Singapore**
-
-**Tsinghua University**
+**National University of Singapore, Tsinghua University**
 
 Project page with demo: [NExT-Chat](https://next-chatv.github.io/)
 
