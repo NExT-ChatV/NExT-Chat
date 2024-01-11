@@ -233,8 +233,8 @@ Thanks to [Shikra](https://github.com/shikras/shikra), [LLaVA](https://github.co
 Our bibtex:
 ```bibtex
 @misc{zhang2023nextchat,
-      title={NExT-Chat: An LMM for Chat, Detection and Segmentation},
-      author={Ao Zhang and Wei Ji and Tat-Seng Chua},
+      title={NExT-Chat: An LMM for Chat, Detection and Segmentation}, 
+      author={Ao Zhang and Yuan Yao and Wei Ji and Zhiyuan Liu and Tat-Seng Chua},
       year={2023},
       eprint={2311.04498},
       archivePrefix={arXiv},
