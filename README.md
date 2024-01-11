@@ -155,7 +155,7 @@ bash eval_res.sh /path/to/checkpoint
 ### Referring Expression Comprehension (REC)
 Although it seems to be better by modeling the localization as a regression task (also validated by toy experiments),
 we find that pixel2emb now is **hard to beat top-tier pixel2seq models** on REC (like Shikra) in the pre-training setting.
-We guess the key factors might be to find a balance between the localization loss and LM loss, which will significanly affect the REC performance.
+We guess the key factors might be to find a balance between the localization loss and LM loss, which will significantly affect the REC performance.
 We are still working on this interesting finding and tune the model.
 If you have some insights, welcome to discuss.
 <p align="center">
