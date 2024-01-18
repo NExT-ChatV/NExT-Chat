@@ -318,14 +318,20 @@ class NextChatInference(object):
         self.model, self.model_args, self.preprocessor, self.tokenizer = build_model(model_path, vit_path, image_token_len=image_token_len)
 
     def __call__(self, input_tensor, **forward_params):
-        forward_params = {}
+        image, text = input_tensor["image"], input_tensor["text"]
         temperature = forward_params.pop("temperature", 0.8)
         top_p = forward_params.pop("top_p", 0.7)
         top_k = forward_params.pop("top_k", 5)
         boxes = forward_params.pop("boxes", [])
         boxes_seq = forward_params.pop("boxes_seq", [])
         iou_thres = forward_params.pop("iou_thres", 0.3)
-        image, text = input_tensor["image"], input_tensor["text"]
+
+        # check for parsing box
+        cur_input_text, cur_boxes_seq = parse_boxes(text)
+        if len(cur_boxes_seq) > 0:
+            text = cur_input_text
+            boxes_seq = cur_boxes_seq
+
         response, boxes, masks, ret_img = model_predict(self.model, self.model_args,
                                           self.tokenizer, self.preprocessor,
                                           image, text,
