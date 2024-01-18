@@ -41,6 +41,33 @@ class DiceLoss(nn.Module):
 
         return 1 - dice
 
+# losses from LISA
+def calculate_dice_loss(predictions: torch.Tensor, ground_truth: torch.Tensor, mask_count: float, scale_factor=1000,
+                        epsilon=1e-6):
+    """
+    Calculate the DICE loss, a measure similar to generalized IOU for masks.
+    """
+    predictions = predictions.sigmoid()
+    predictions = predictions.flatten(1, 2)
+    ground_truth = ground_truth.flatten(1, 2)
+
+    intersection = 2 * (predictions / scale_factor * ground_truth).sum(dim=-1)
+    union = (predictions / scale_factor).sum(dim=-1) + (ground_truth / scale_factor).sum(dim=-1)
+
+    dice_loss = 1 - (intersection + epsilon) / (union + epsilon)
+    dice_loss = dice_loss.sum() / (mask_count + 1e-8)
+    return dice_loss
+
+
+def compute_sigmoid_cross_entropy(predictions: torch.Tensor, targets: torch.Tensor, mask_count: float):
+    """
+    Compute sigmoid cross-entropy loss for binary classification.
+    """
+    loss = F.binary_cross_entropy_with_logits(predictions, targets, reduction="none")
+    loss = loss.flatten(1, 2).mean(1)
+    loss = loss.sum() / (mask_count + 1e-8)
+    return loss
+
 
 def calc_iou(pred_mask: torch.Tensor, gt_mask: torch.Tensor):
     pred_mask = (pred_mask >= 0.5)
@@ -59,17 +86,37 @@ class SamLoss(nn.Module):
         self.focal_loss = FocalLoss()
         self.dice_loss = DiceLoss()
 
+        self.bce_loss_weight = 2
+        self.dice_loss_weight = 0.5
+    # def forward(self, pred_masks, gt_masks, iou_predictions, device):
+    #     loss_focal = 0.
+    #     loss_dice = 0.
+    #     loss_iou = 0.
+    #     num_masks = sum(len(pred_mask) for pred_mask in pred_masks)
+    #     for pred_mask, gt_mask, iou_prediction in zip(pred_masks, gt_masks, iou_predictions):
+    #         gt_mask = gt_mask.to(device)
+    #         batch_iou = calc_iou(pred_mask, gt_mask)
+    #         loss_focal += self.focal_loss(pred_mask, gt_mask, num_masks)
+    #         loss_dice += self.dice_loss(pred_mask, gt_mask, num_masks)
+    #         loss_iou += F.mse_loss(iou_prediction, batch_iou, reduction='sum') / num_masks
+    #
+    #     loss_total = 20. * loss_focal + loss_dice + loss_iou
+    #     return loss_total
     def forward(self, pred_masks, gt_masks, iou_predictions, device):
-        loss_focal = 0.
-        loss_dice = 0.
-        loss_iou = 0.
+        mask_bce_loss = 0
+        mask_dice_loss = 0
         num_masks = sum(len(pred_mask) for pred_mask in pred_masks)
         for pred_mask, gt_mask, iou_prediction in zip(pred_masks, gt_masks, iou_predictions):
-            gt_mask = gt_mask.to(device)
-            batch_iou = calc_iou(pred_mask, gt_mask)
-            loss_focal += self.focal_loss(pred_mask, gt_mask, num_masks)
-            loss_dice += self.dice_loss(pred_mask, gt_mask, num_masks)
-            loss_iou += F.mse_loss(iou_prediction, batch_iou, reduction='sum') / num_masks
+            # Compute Binary Cross-Entropy Loss
+            mask_bce_loss += (compute_sigmoid_cross_entropy(pred_mask, gt_mask, mask_count=gt_mask.shape[0]) *
+                              gt_mask.shape[0])
+            # Compute Dice Loss
+            mask_dice_loss += (
+                    calculate_dice_loss(pred_mask, gt_mask, mask_count=gt_mask.shape[0]) * gt_mask.shape[0])
+            num_masks += gt_mask.shape[0]
 
-        loss_total = 20. * loss_focal + loss_dice + loss_iou
-        return loss_total
+        # Normalize the losses
+        mask_bce_loss = self.bce_loss_weight * mask_bce_loss / (num_masks + 1e-8)
+        mask_dice_loss = self.dice_loss_weight * mask_dice_loss / (num_masks + 1e-8)
+        mask_loss = mask_bce_loss + mask_dice_loss
+        return mask_loss
