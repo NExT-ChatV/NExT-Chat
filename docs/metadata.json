@@ -1,0 +1,320 @@
+{
+    "url": {
+        "full": "https://github.com/NExT-ChatV/NExT-Chat",
+        "partial": "NExT-ChatV/NExT-Chat"
+    },
+    "file_mapping": {
+        "0": {
+            "filepath": "/DATA.md",
+            "entry_id": 0,
+            "language_id": "markdown"
+        },
+        "1": {
+            "filepath": "/README.md",
+            "entry_id": 6,
+            "language_id": "plain-text"
+        },
+        "2": {
+            "filepath": "/config/_base_/model/nextchat.py",
+            "entry_id": 28,
+            "language_id": "python"
+        },
+        "3": {
+            "filepath": "/config/_base_/train/eval.py",
+            "entry_id": 34,
+            "language_id": "python"
+        },
+        "4": {
+            "filepath": "/config/_base_/train/nextchat_fsdp.py",
+            "entry_id": 38,
+            "language_id": "python"
+        },
+        "5": {
+            "filepath": "/config/_base_/train/nextchat_non.py",
+            "entry_id": 42,
+            "language_id": "python"
+        },
+        "6": {
+            "filepath": "/config/nextchat_eval_multi_rec.py",
+            "entry_id": 46,
+            "language_id": "python"
+        },
+        "7": {
+            "filepath": "/config/nextchat_eval_multi_res.py",
+            "entry_id": 50,
+            "language_id": "python"
+        },
+        "8": {
+            "filepath": "/config/nextchat_eval_pope.py",
+            "entry_id": 56,
+            "language_id": "python"
+        },
+        "9": {
+            "filepath": "/config/nextchat_eval_reg_cap.py",
+            "entry_id": 60,
+            "language_id": "python"
+        },
+        "10": {
+            "filepath": "/config/nextchat_stage1.py",
+            "entry_id": 64,
+            "language_id": "python"
+        },
+        "11": {
+            "filepath": "/config/nextchat_stage2.py",
+            "entry_id": 68,
+            "language_id": "python"
+        },
+        "12": {
+            "filepath": "/config/nextchat_stage3.py",
+            "entry_id": 72,
+            "language_id": "python"
+        },
+        "13": {
+            "filepath": "/eval_pope.sh",
+            "entry_id": 76,
+            "language_id": "shell"
+        },
+        "14": {
+            "filepath": "/eval_rec.sh",
+            "entry_id": 80,
+            "language_id": "shell"
+        },
+        "15": {
+            "filepath": "/eval_reg_cap.sh",
+            "entry_id": 84,
+            "language_id": "shell"
+        },
+        "16": {
+            "filepath": "/eval_res.sh",
+            "entry_id": 88,
+            "language_id": "shell"
+        },
+        "17": {
+            "filepath": "/mllm/config/__init__.py",
+            "entry_id": 92,
+            "language_id": "python"
+        },
+        "18": {
+            "filepath": "/mllm/config/config.py",
+            "entry_id": 96,
+            "language_id": "python"
+        },
+        "19": {
+            "filepath": "/mllm/conversation/__init__.py",
+            "entry_id": 110,
+            "language_id": "python"
+        },
+        "20": {
+            "filepath": "/mllm/conversation/base_conversation.py",
+            "entry_id": 114,
+            "language_id": "python"
+        },
+        "21": {
+            "filepath": "/mllm/dataset/__init__.py",
+            "entry_id": 150,
+            "language_id": "python"
+        },
+        "22": {
+            "filepath": "/mllm/dataset/builder.py",
+            "entry_id": 154,
+            "language_id": "python"
+        },
+        "23": {
+            "filepath": "/mllm/dataset/process_function/__init__.py",
+            "entry_id": 166,
+            "language_id": "python"
+        },
+        "24": {
+            "filepath": "/mllm/dataset/process_function/box_process_function.py",
+            "entry_id": 170,
+            "language_id": "python"
+        },
+        "25": {
+            "filepath": "/mllm/dataset/process_function/chat_process_function.py",
+            "entry_id": 200,
+            "language_id": "python"
+        },
+        "26": {
+            "filepath": "/mllm/dataset/root.py",
+            "entry_id": 218,
+            "language_id": "python"
+        },
+        "27": {
+            "filepath": "/mllm/dataset/single_image_convsation.py",
+            "entry_id": 224,
+            "language_id": "python"
+        },
+        "28": {
+            "filepath": "/mllm/dataset/single_image_interactive.py",
+            "entry_id": 260,
+            "language_id": "python"
+        },
+        "29": {
+            "filepath": "/mllm/dataset/utils/__init__.py",
+            "entry_id": 276,
+            "language_id": "python"
+        },
+        "30": {
+            "filepath": "/mllm/dataset/utils/compute_metrics.py",
+            "entry_id": 280,
+            "language_id": "python"
+        },
+        "31": {
+            "filepath": "/mllm/dataset/utils/concatenate_dataset.py",
+            "entry_id": 286,
+            "language_id": "python"
+        },
+        "32": {
+            "filepath": "/mllm/dataset/utils/flickr30k_entities_utils.py",
+            "entry_id": 304,
+            "language_id": "python"
+        },
+        "33": {
+            "filepath": "/mllm/dataset/utils/io.py",
+            "entry_id": 322,
+            "language_id": "python"
+        },
+        "34": {
+            "filepath": "/mllm/dataset/utils/mixin.py",
+            "entry_id": 328,
+            "language_id": "python"
+        },
+        "35": {
+            "filepath": "/mllm/dataset/utils/transform.py",
+            "entry_id": 338,
+            "language_id": "python"
+        },
+        "36": {
+            "filepath": "/mllm/demo/bash_demo.py",
+            "entry_id": 364,
+            "language_id": "python"
+        },
+        "37": {
+            "filepath": "/mllm/demo/demo_util.py",
+            "entry_id": 368,
+            "language_id": "python"
+        },
+        "38": {
+            "filepath": "/mllm/demo/web_demo.py",
+            "entry_id": 394,
+            "language_id": "python"
+        },
+        "39": {
+            "filepath": "/mllm/engine/__init__.py",
+            "entry_id": 414,
+            "language_id": "python"
+        },
+        "40": {
+            "filepath": "/mllm/engine/base_engine.py",
+            "entry_id": 418,
+            "language_id": "python"
+        },
+        "41": {
+            "filepath": "/mllm/engine/builder.py",
+            "entry_id": 454,
+            "language_id": "python"
+        },
+        "42": {
+            "filepath": "/mllm/engine/nextchat.py",
+            "entry_id": 458,
+            "language_id": "python"
+        },
+        "43": {
+            "filepath": "/mllm/models/__init__.py",
+            "entry_id": 464,
+            "language_id": "python"
+        },
+        "44": {
+            "filepath": "/mllm/models/builder/__init__.py",
+            "entry_id": 468,
+            "language_id": "python"
+        },
+        "45": {
+            "filepath": "/mllm/models/builder/build_nextchat.py",
+            "entry_id": 472,
+            "language_id": "python"
+        },
+        "46": {
+            "filepath": "/mllm/models/builder/builder.py",
+            "entry_id": 496,
+            "language_id": "python"
+        },
+        "47": {
+            "filepath": "/mllm/models/nextchat/__init__.py",
+            "entry_id": 500,
+            "language_id": "python"
+        },
+        "48": {
+            "filepath": "/mllm/models/nextchat/nextchat_base.py",
+            "entry_id": 504,
+            "language_id": "python"
+        },
+        "49": {
+            "filepath": "/mllm/models/nextchat/nextchat_seg.py",
+            "entry_id": 556,
+            "language_id": "python"
+        },
+        "50": {
+            "filepath": "/mllm/models/sam/modeling_sam.py",
+            "entry_id": 578,
+            "language_id": "python"
+        },
+        "51": {
+            "filepath": "/mllm/models/sam/sam_loss.py",
+            "entry_id": 684,
+            "language_id": "python"
+        },
+        "52": {
+            "filepath": "/mllm/models/sam/transforms.py",
+            "entry_id": 692,
+            "language_id": "python"
+        },
+        "53": {
+            "filepath": "/mllm/pipeline/finetune.py",
+            "entry_id": 706,
+            "language_id": "python"
+        },
+        "54": {
+            "filepath": "/mllm/pipeline/finetune_mem.py",
+            "entry_id": 720,
+            "language_id": "python"
+        },
+        "55": {
+            "filepath": "/mllm/utils/__init__.py",
+            "entry_id": 724,
+            "language_id": "python"
+        },
+        "56": {
+            "filepath": "/mllm/utils/box_ops.py",
+            "entry_id": 728,
+            "language_id": "python"
+        },
+        "57": {
+            "filepath": "/mllm/utils/common.py",
+            "entry_id": 738,
+            "language_id": "python"
+        },
+        "58": {
+            "filepath": "/requirements.txt",
+            "entry_id": 758,
+            "language_id": "plain-text"
+        },
+        "59": {
+            "filepath": "/run_stage1.sh",
+            "entry_id": 762,
+            "language_id": "shell"
+        },
+        "60": {
+            "filepath": "/run_stage2.sh",
+            "entry_id": 766,
+            "language_id": "shell"
+        },
+        "61": {
+            "filepath": "/run_stage3.sh",
+            "entry_id": 770,
+            "language_id": "shell"
+        }
+    },
+    "project_name": "NExT-Chat",
+    "split_count": 8
+}

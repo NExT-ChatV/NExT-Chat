@@ -1,0 +1,15 @@
+{
+    "summary": "The code prepares a \"nextchat\" model for evaluation and prediction by configuring training arguments, data inputs, metrics, and generating new tokens using a single beam search approach.",
+    "details": [
+        {
+            "comment": "This code is setting up a configuration for evaluating and predicting performance of a pre-trained \"nextchat\" model. It will create an output directory, set training arguments such as batch size and model type, specify data inputs (train, validation, test), and configure the prediction process including metric calculations and generation of new tokens.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/config/nextchat_eval_multi_res.py\":0-44",
+            "content": "_base_ = ['_base_/dataset/DEFAULT_TEST_DATASET.py', '_base_/model/nextchat.py', '_base_/train/eval.py']\ntraining_args = dict(\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n    do_train=False,\n    do_eval=False,\n    do_predict=False,\n    do_multi_predict=True,\n    fp16=False,\n    fp16_full_eval=False,\n    bf16=True,\n    bf16_full_eval=True,\n    per_device_eval_batch_size=1,\n)\nmodel_args = dict(\n    type='nextchat_seg',\n    model_name_or_path=None,\n    conv_args=dict(\n        conv_template='vicuna_v1.1',\n        transforms=dict(type='Expand2square'),\n        tokenize_kwargs=dict(truncation_size=2048),\n    ),\n)\ndata_args = dict(\n    train=None,\n    validation=None,\n    test=None,\n    multitest={k: {'cfg': v, 'compute_metric': dict(type='RESComputeMetrics')} for k, v in _base_.DEFAULT_TEST_RES_VARIANT.items()},\n    compute_metric=None,\n    # padding collator kwargs\n    collator_kwargs=dict(\n        padding=True,\n        max_length=1024,\n    ),\n    dataset_wrapper='conv_seg',\n    # generate config\n    gen_kwargs=dict(\n        max_new_tokens=20,"
+        },
+        {
+            "comment": "This code sets the number of beams to 1, indicating a single beam search approach for evaluation in multi-response generation.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/config/nextchat_eval_multi_res.py\":45-47",
+            "content": "        num_beams=1,\n    ),\n)"
+        }
+    ]
+}

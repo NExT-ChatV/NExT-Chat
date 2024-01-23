@@ -1,0 +1,544 @@
+{
+    "400": {
+        "file_id": 38,
+        "content": "                            boxes=boxes, boxes_seq=boxes_seq)\n    ret_text = [(post_process_response(input_text), post_process_response(response))]\n    filename_grounding = None\n    if img is not None:\n        print(\"detection\")\n        timestamp = int(time.time())\n        filename_grounding = f\"tmp/{timestamp}.jpg\"\n        if not os.path.exists(\"tmp/\"):\n            os.makedirs(\"tmp/\")\n        img.save(filename_grounding)\n    if img is not None:\n        ret_text.append((None, (filename_grounding,)))\n    return \"\", ret_text, hidden_image\ndefault_chatbox = [(\"\", \"Please begin the chat.\")]\ndef shortcut_func(task_name, text):\n    task_name = task_name[0]\n    if task_name == \"Grounding\":\n        return \"Where is XXX in the image?\"\n    elif task_name == \"Caption\":\n        return \"Can you provide a description of the image and include the locations for each mentioned object?\"\n    elif task_name == \"Explain\":\n        return text.strip()+\" Please include object locations and explain.\"\n    elif task_name == \"Region Cap\":",
+        "type": "code",
+        "location": "/mllm/demo/web_demo.py:68-97"
+    },
+    "401": {
+        "file_id": 38,
+        "content": "The code is creating a chatbot that can recognize images, take user input, and respond accordingly. If an image is provided, it saves it to a temporary folder. The code includes functions for grounding, captioning, explaining, and region captioning tasks based on the user's input. The default chatbox prompts the user to begin the chat.",
+        "type": "comment"
+    },
+    "402": {
+        "file_id": 38,
+        "content": "        return \"What is region [0]?\"\n    return \"\"\ndef new_state():\n    return {\"ibs\": ImageBoxState()}\ndef clear_fn(value):\n    return \"\", default_chatbox, None, None, new_state()\ndef clear_fn2(value):\n    return default_chatbox, None, new_state()\nif __name__ == '__main__':\n    # conversation = prepare_interactive(model_args, preprocessor)\n    # predict(model, \"tmp.jpg\", \"Find person bottom left in <image>.\", boxes=None, boxes_seq=None)\n    # import IPython\n    # IPython.embed()\n    with gr.Blocks() as demo:\n        gr.HTML(\n            f\"\"\"\n            <h1 align=\"center\"><font color=\"#966661\">NExT-Chat</font></h1>\n            <p align=\"center\">\n                <a href='' target='_blank'>[Project]</a>\n                <a href='' target='_blank'>[Paper]</a>\n            </p>\n            <h2>User Manual</h2>\n            <ul>\n            <li><p><strong>Grounding:</strong> Where is XXX in the &lt;image&gt;? </p></li>\n            <li><p><strong>Caption with objects: </strong>Can you provide a description of the image &lt;image&gt; and include the locations for each mentioned object? </p></li>",
+        "type": "code",
+        "location": "/mllm/demo/web_demo.py:98-130"
+    },
+    "403": {
+        "file_id": 38,
+        "content": "The code defines a function `new_state()` to return the initial image box state, and two functions `clear_fn()` and `clear_fn2()` that return default values for chatbox and states. The main part of the code initializes a GROMACS block with HTML elements for NExT-Chat's user manual, providing instructions on how to use the program for grounding and captioning tasks with images.",
+        "type": "comment"
+    },
+    "404": {
+        "file_id": 38,
+        "content": "            <li><p><strong>The model is default not to include obj locations at most time.</strong> </p></li>\n            <li><p><strong>To let the model include object locations. You can add prompts like:</strong> </p></li>\n                <ul>\n                <li><p>Please include object locations and explain. </p></li>\n                <li><p>Make sure to include object locations and explain. </p></li>\n                <li><p>Please include object locations as much as possible. </p></li>\n                </ul>\n            <li><p><strong>Region Understanding:</strong> draw boxes and ask like \"what is region [0]?\" </p></li>\n            <ul>\n            \"\"\"\n        )\n        with gr.Row():\n            with gr.Column(scale=6):\n                with gr.Group():\n                    input_shortcuts = gr.Dataset(components=[gr.Textbox(visible=False)], samples=[\n                        [\"Grounding\"],\n                        [\"Caption\"], [\"Explain\"], [\"Region Cap\"]], label=\"Shortcut Dataset\")\n                    input_text = gr.Textbox(label='Input Text',",
+        "type": "code",
+        "location": "/mllm/demo/web_demo.py:131-151"
+    },
+    "405": {
+        "file_id": 38,
+        "content": "The code provides a list of prompts to include object locations in the model's responses and explains the process for region understanding using boxes.",
+        "type": "comment"
+    },
+    "406": {
+        "file_id": 38,
+        "content": "                                            placeholder='Please enter text prompt below and press ENTER.')\n                    with gr.Row():\n                        input_image = gr.ImageMask()\n                        out_imagebox = gr.Image(label=\"Parsed Sketch Pad\")\n                    input_image_state = gr.State(new_state())\n                with gr.Row():\n                    temperature = gr.Slider(maximum=1, value=0.8, minimum=0, label='Temperature')\n                    top_p = gr.Slider(maximum=1, value=0.7, minimum=0, label='Top P')\n                    top_k = gr.Slider(maximum=100, value=5, minimum=1, step=1, label='Top K')\n                with gr.Row():\n                    run_button = gr.Button('Generate')\n                    clear_button = gr.Button('Clear')\n            with gr.Column(scale=4):\n                output_text = gr.components.Chatbot(label='Multi-round conversation History',\n                                                    value=default_chatbox).style(height=550)\n                output_image = gr.Textbox(visible=False)",
+        "type": "code",
+        "location": "/mllm/demo/web_demo.py:152-171"
+    },
+    "407": {
+        "file_id": 38,
+        "content": "The code above sets up a graphical user interface (GUI) for a chatbot using the Gloabal Runtime (GR) library. The UI includes an input box for text prompts, an image mask for parsing sketches, sliders to adjust generation settings like temperature and top K, buttons for generating responses and clearing history, and two output areas: one for displaying text conversation history and another for displaying parsed images.",
+        "type": "comment"
+    },
+    "408": {
+        "file_id": 38,
+        "content": "        input_shortcuts.click(fn=shortcut_func, inputs=[input_shortcuts, input_text], outputs=[input_text])\n        run_button.click(fn=chat_one_turn, inputs=[input_text, temperature, top_p, top_k,\n                                                   input_image, output_text, output_image,\n                                                   input_image_state],\n                         outputs=[input_text, output_text, output_image])\n        input_text.submit(fn=chat_one_turn, inputs=[input_text, temperature, top_p, top_k,\n                                                    input_image, output_text, output_image,\n                                                    input_image_state],\n                          outputs=[input_text, output_text, output_image])\n        clear_button.click(fn=clear_fn, inputs=clear_button,\n                           outputs=[input_text, output_text, input_image, out_imagebox, input_image_state])\n        input_image.upload(fn=clear_fn2, inputs=clear_button, outputs=[output_text, out_imagebox, input_image_state])",
+        "type": "code",
+        "location": "/mllm/demo/web_demo.py:173-185"
+    },
+    "409": {
+        "file_id": 38,
+        "content": "The code above consists of several function calls to execute chatbot interactions. `input_shortcuts.click()` triggers a shortcut function, `run_button.click()` executes a one-turn chat conversation, `input_text.submit()` also triggers the same one-turn chat, and finally, `clear_button.click()` clears the input text and images while `input_image.upload()` uploads an image. Each function call has different inputs and outputs associated with them for executing the respective tasks.",
+        "type": "comment"
+    },
+    "410": {
+        "file_id": 38,
+        "content": "        input_image.clear(fn=clear_fn2, inputs=clear_button, outputs=[output_text, out_imagebox, input_image_state])\n        input_image.edit(\n            fn=bbox_draw,\n            inputs=[input_image, input_image_state],\n            outputs=[out_imagebox, input_image_state],\n            queue=False,\n        )\n        with gr.Row():\n            gr.Examples(\n                examples=[\n                    [\n                        os.path.join(os.path.dirname(__file__), \"assets/dog.jpg\"),\n                        \"Can you describe the image and include object locations?\",\n                        new_state(),\n                    ],\n                    [\n                        os.path.join(os.path.dirname(__file__), \"assets/fishing.jpg\"),\n                        \"A boy is sleeping on bed, is this correct? Please include object locations.\",\n                        new_state(),\n                    ],\n                    [\n                        os.path.join(os.path.dirname(__file__), \"assets/rec_bear.png\"),\n                        \"Where is the bear wearing the red decoration in the image?\",",
+        "type": "code",
+        "location": "/mllm/demo/web_demo.py:186-209"
+    },
+    "411": {
+        "file_id": 38,
+        "content": "This code block is creating an example for the GUI application. It sets up input and output variables, uses functions to clear and edit the image, and creates a row with three examples using different images, prompts, and initial states.",
+        "type": "comment"
+    },
+    "412": {
+        "file_id": 38,
+        "content": "                        new_state(),\n                    ],\n                    [\n                        os.path.join(os.path.dirname(__file__), \"assets/woman.jpeg\"),\n                        \"What is the woman doing? Please include object locations.\",\n                        new_state(),\n                    ],\n                ],\n                inputs=[input_image, input_text, input_image_state],\n            )\n    print(\"launching...\")\n    demo.queue().launch(server_name=args.server_name, server_port=args.server_port, share=True)",
+        "type": "code",
+        "location": "/mllm/demo/web_demo.py:210-222"
+    },
+    "413": {
+        "file_id": 38,
+        "content": "This code initializes a new demo object, sets its input images and text, and launches the demo on a specified server with sharing enabled.",
+        "type": "comment"
+    },
+    "414": {
+        "file_id": 39,
+        "content": "/mllm/engine/__init__.py",
+        "type": "filepath"
+    },
+    "415": {
+        "file_id": 39,
+        "content": "Imports necessary modules from base_engine, nextchat, and builder for initializing trainer classes and collator.",
+        "type": "summary"
+    },
+    "416": {
+        "file_id": 39,
+        "content": "from .base_engine import TrainerForMMLLM, TrainerDifferentCollatorMixin\nfrom .nextchat import NextChatTrainer\nfrom .builder import prepare_trainer_collator",
+        "type": "code",
+        "location": "/mllm/engine/__init__.py:1-3"
+    },
+    "417": {
+        "file_id": 39,
+        "content": "Imports necessary modules from base_engine, nextchat, and builder for initializing trainer classes and collator.",
+        "type": "comment"
+    },
+    "418": {
+        "file_id": 40,
+        "content": "/mllm/engine/base_engine.py",
+        "type": "filepath"
+    },
+    "419": {
+        "file_id": 40,
+        "content": "The code creates a custom collator for data handling, defines prediction steps, calculates metrics, performs loss and evaluation, saves results, checks parallelism, deepcopies variables, and plots training loss. It also processes images, updates return dictionary with image outputs, adds tensors, and returns the updated dictionary as output.",
+        "type": "summary"
+    },
+    "420": {
+        "file_id": 40,
+        "content": "import os\nimport sys\nimport json\nimport logging\nimport warnings\nfrom copy import deepcopy\nfrom typing import Any, Dict, List, Optional, Tuple, Union, Sequence, Mapping\nimport torch\nfrom torch import nn\nimport torch.nn.functional as F\nfrom torch.utils.data import DataLoader, Dataset\nfrom tqdm import tqdm\nfrom transformers import Seq2SeqTrainer, DataCollator, DataCollatorForSeq2Seq\nfrom transformers.deepspeed import is_deepspeed_zero3_enabled\nfrom transformers.trainer import TRAINER_STATE_NAME\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\nlogging.basicConfig(\n    format=\"%(asctime)s - %(levelname)s - %(name)s - %(message)s\",\n    datefmt=\"%m/%d/%Y %H:%M:%S\",\n    handlers=[logging.StreamHandler(sys.stdout), ],\n)\nclass TrainerDifferentCollatorMixin:\n    def __init__(self,\n                 *args,\n                 train_collator: Optional[DataCollator] = None,\n                 eval_collator: Optional[DataCollator] = None,\n                 test_collator: Optional[DataCollator] = None,\n                 **kwargs):",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:1-33"
+    },
+    "421": {
+        "file_id": 40,
+        "content": "The code imports necessary libraries, sets up logging, and defines a class for different collators in a trainer. The TrainerDifferentCollatorMixin class takes optional arguments for train_collator, eval_collator, and test_collator. It inherits from Seq2SeqTrainer to provide custom collation logic for training, evaluation, and testing data.",
+        "type": "comment"
+    },
+    "422": {
+        "file_id": 40,
+        "content": "        if train_collator is None and eval_collator is None and test_collator is None:\n            raise ValueError(\"use different collator for trainer but get no collator function.\")\n        if eval_collator is not None and test_collator is not None and eval_collator != test_collator:\n            warnings.warn('[WARNING!!!] use different collator for eval and test. but maybe do_eval and '\n                          'do_predict both use trainer.predict (i.e. only test_collator is used.) u should'\n                          'check your code and know exactly what u are doing.')\n        self._train_collator = train_collator\n        self._eval_collator = eval_collator if eval_collator is not None else self._train_collator\n        self._test_collator = test_collator if test_collator is not None else self._eval_collator\n        if \"data_collator\" in kwargs and kwargs[\"data_collator\"] is not None:\n            warnings.warn(\"use different collator for trainer but get 'data_collator' argument. It will take no effect and be ignored.\")",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:34-44"
+    },
+    "423": {
+        "file_id": 40,
+        "content": "This code raises a ValueError if no collator is provided for the trainer. It also issues a warning if different collators are provided for eval and test, as it's possible that only the test_collator is being used. If \"data_collator\" is passed in as an argument but has a non-null value, it will be ignored with a warning.",
+        "type": "comment"
+    },
+    "424": {
+        "file_id": 40,
+        "content": "        super().__init__(*args, **kwargs)\n    # noinspection PyAttributeOutsideInit,PyUnresolvedReferences\n    def get_train_dataloader(self) -> DataLoader:\n        old_collator = self.data_collator\n        self.data_collator = self._train_collator\n        dataloader = super().get_train_dataloader()\n        self.data_collator = old_collator\n        return dataloader\n    # noinspection PyAttributeOutsideInit,PyUnresolvedReferences\n    def get_eval_dataloader(self, eval_dataset: Optional[Dataset] = None) -> DataLoader:\n        old_collator = self.data_collator\n        self.data_collator = self._eval_collator\n        dataloader = super().get_eval_dataloader(eval_dataset)\n        self.data_collator = old_collator\n        return dataloader\n    # noinspection PyAttributeOutsideInit,PyUnresolvedReferences\n    def get_test_dataloader(self, test_dataset: Dataset) -> DataLoader:\n        old_collator = self.data_collator\n        self.data_collator = self._test_collator\n        dataloader = super().get_test_dataloader(test_dataset)",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:45-67"
+    },
+    "425": {
+        "file_id": 40,
+        "content": "This code overrides the `get_train_dataloader`, `get_eval_dataloader`, and `get_test_dataloader` methods to temporarily replace the data collator with custom ones for training, evaluation, and testing respectively before calling the parent class's implementation and restoring the original data collator.",
+        "type": "comment"
+    },
+    "426": {
+        "file_id": 40,
+        "content": "        self.data_collator = old_collator\n        return dataloader\n# noinspection DuplicatedCode\nclass TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):\n    def _prepare_inputs(self, inputs: Dict[str, Union[torch.Tensor, Any]]) -> Dict[str, Union[torch.Tensor, Any]]:\n        \"\"\"\n        Prepare `inputs` before feeding them to the model, converting them to tensors if they are not already and\n        handling potential state.\n        \"\"\"\n        inputs = self._prepare_input(inputs)\n        if len(inputs) == 0:\n            raise ValueError(\n                \"The batch received was empty, your model won't be able to train on it. Double-check that your \"\n                f\"training dataset contains keys expected by the model: {','.join(self._signature_columns)}.\"\n            )\n        if self.args.past_index >= 0 and self._past is not None:\n            inputs[\"mems\"] = self._past\n        # if self.is_local_process_zero():\n        #     print(self.lr_scheduler.lr_lambdas[0])\n        #     print(self.lr_scheduler.last_epoch,",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:68-90"
+    },
+    "427": {
+        "file_id": 40,
+        "content": "The code defines a TrainerForMMLLM class that extends Seq2SeqTrainer and implements TrainerDifferentCollatorMixin. It has a _prepare_inputs method to prepare inputs for the model by converting them into tensors if necessary, handling potential states, and adding past memory if needed. The code also includes an optional print statement for the learning rate lambdas and the last epoch of the LR scheduler when in local process zero.",
+        "type": "comment"
+    },
+    "428": {
+        "file_id": 40,
+        "content": "        #           self.lr_scheduler.lr_lambdas[0](self.lr_scheduler.last_epoch),\n        #           not self.accelerator.optimizer_step_was_skipped)\n        return inputs\n    def prediction_step(\n            self,\n            model: nn.Module,\n            inputs: Dict[str, Union[torch.Tensor, Any]],\n            prediction_loss_only: bool,\n            ignore_keys: Optional[List[str]] = None,\n    ) -> Tuple[Optional[float], Optional[torch.Tensor], Optional[torch.Tensor]]:\n        # Override to inject custom behavior.\n        # noinspection PyUnresolvedReferences\n        if not self.args.predict_with_generate or prediction_loss_only:\n            return super().prediction_step(\n                model, inputs, prediction_loss_only=prediction_loss_only, ignore_keys=ignore_keys\n            )\n        has_labels = \"labels\" in inputs\n        inputs = self._prepare_inputs(inputs)\n        gen_kwargs = self._gen_kwargs.copy()\n        if gen_kwargs.get(\"max_length\") is None and gen_kwargs.get(\"max_new_tokens\") is None:",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:91-114"
+    },
+    "429": {
+        "file_id": 40,
+        "content": "This code defines a `prediction_step` function that performs prediction using the given model and inputs. It checks if predictions should be made with generation or not, and if necessary, it calls the superclass implementation. If generation is required, it prepares inputs and updates generation keyword arguments before returning the output.",
+        "type": "comment"
+    },
+    "430": {
+        "file_id": 40,
+        "content": "            gen_kwargs[\"max_length\"] = self.model.config.max_length\n        gen_kwargs[\"num_beams\"] = (\n            gen_kwargs[\"num_beams\"] if gen_kwargs.get(\"num_beams\") is not None else self.model.config.num_beams\n        )\n        default_synced_gpus = True if is_deepspeed_zero3_enabled() else False\n        gen_kwargs[\"synced_gpus\"] = (\n            gen_kwargs[\"synced_gpus\"] if gen_kwargs.get(\"synced_gpus\") is not None else default_synced_gpus\n        )\n        # filter keys\n        filter_keys = [\"labels\"]\n        for k in inputs:\n            if not (k in filter_keys):\n                gen_kwargs[k] = inputs[k]\n        self._logging_generate_kwargs(gen_kwargs.keys())\n        with torch.inference_mode():\n            with self.compute_loss_context_manager():\n                if len(inputs[\"loc_targets\"])==len(inputs[\"loc_inputs\"]) and len(inputs['loc_targets'])>0 and \"masks_sam\" not in inputs: # eval rec\n                    generated_tokens = self.model.generate_rec(**gen_kwargs)\n                    # generated_tokens = self.tensor2token(generated_tokens)",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:115-134"
+    },
+    "431": {
+        "file_id": 40,
+        "content": "This code sets default values for \"max_length\", \"num_beams\", and \"synced_gpus\" in the generate function. It also filters unnecessary keys, ensuring only necessary inputs are used. If specific conditions are met, it generates text using the model's `generate_rec` method.",
+        "type": "comment"
+    },
+    "432": {
+        "file_id": 40,
+        "content": "                else:\n                    generated_tokens = self.model.generate(**gen_kwargs)\n                    if \"masks_sam\" not in inputs and type(generated_tokens) is tuple:\n                        generated_tokens = generated_tokens[0]\n                    # generated_tokens = self.tensor2token(generated_tokens)\n        # TODO: rewrite official seq2seq_trainer to suppress generation_config warning\n        if self.model.generation_config._from_model_config:\n            self.model.generation_config._from_model_config = False\n        # important for Decoder-Only LLM: only extract generated_tokens and discard origin inputs\n        generation_inputs = inputs['input_ids']\n        # generated_tokens = generated_tokens[:, generation_inputs.size()[-1]:]\n        if self.model.generation_config._from_model_config:\n            self.model.generation_config._from_model_config = False\n        # Retrieves GenerationConfig from model.generation_config\n        gen_config = self.model.generation_config\n        # in case the batch is shorter than max length, the output should be padded",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:135-154"
+    },
+    "433": {
+        "file_id": 40,
+        "content": "This code is part of a base engine for a language model. It generates tokens using the model and checks if the input contains certain values. The code also suppresses warnings related to generation config, extracts generated tokens, and retrieves GenerationConfig from model.generation_config.",
+        "type": "comment"
+    },
+    "434": {
+        "file_id": 40,
+        "content": "        # if generated_tokens.shape[-1] < gen_config.max_length:\n        #     generated_tokens = self._pad_tensors_to_max_len(generated_tokens, gen_config.max_length)\n        # elif gen_config.max_new_tokens is not None and generated_tokens.shape[-1] < gen_config.max_new_tokens + 1:\n        #     generated_tokens = self._pad_tensors_to_max_len(generated_tokens, gen_config.max_new_tokens + 1)\n        loss = None\n        if self.args.prediction_loss_only:\n            return loss, None, None\n        if has_labels:\n            if \"masks_sam\" in inputs: # res segmentation eval\n                gt_masks = inputs[\"masks_sam\"]\n                gt_masks = torch.stack(gt_masks, 0)\n                if generated_tokens[1] is None:\n                    pred_masks = gt_masks.clone()\n                    pred_masks[:] = 0\n                    print(\"fail\")\n                else:\n                    pred_masks = generated_tokens[1]\n                pred_masks = self.de_transform_mask(inputs[\"img_size\"][0, 1], inputs[\"img_size\"][0, 0], pred_masks)",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:155-175"
+    },
+    "435": {
+        "file_id": 40,
+        "content": "This code snippet checks if the generated tokens' length is less than the maximum allowed length or if it's less than the sum of max_new_tokens and 1. If either condition is true, it pads the generated tokens to match the max_length or max_new_tokens+1 length. If prediction_loss_only is True, it returns loss, None, None. If \"masks_sam\" exists in inputs (indicating res segmentation eval), it compares generated_tokens[1] with gt_masks and assigns the pred_masks accordingly. Finally, it transforms pred_masks using de_transform_mask function.",
+        "type": "comment"
+    },
+    "436": {
+        "file_id": 40,
+        "content": "                gt_masks = inputs[\"unresized_masks\"][0].unsqueeze(0)\n                if (pred_masks.size()!=gt_masks.size()):\n                    pred_masks = gt_masks.clone()\n                    pred_masks[:] = 0\n                    print(\"unmatched\")\n                intersection = torch.sum(torch.mul(pred_masks, gt_masks), dim=(1, 2))\n                union = torch.sum(pred_masks, dim=(1, 2)) + torch.sum(gt_masks, dim=(1, 2)) - intersection\n                generated_tokens = intersection\n                labels = union\n            elif len(inputs[\"loc_targets\"]) > 0: # rec bounding box eval\n                # labels = self.tensor2token(inputs[\"loc_targets\"])\n                labels = inputs[\"loc_targets\"]\n            else: # image2text gen task eval\n                labels = inputs[\"labels\"]\n            # if labels.shape[-1] < gen_config.max_length:\n            #     labels = self._pad_tensors_to_max_len(labels, gen_config.max_length)\n            # elif gen_config.max_new_tokens is not None and labels.shape[-1] < gen_config.max_new_tokens + 1:",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:176-193"
+    },
+    "437": {
+        "file_id": 40,
+        "content": "This code performs evaluation metrics calculation for generated tokens based on the input type. It checks if there is a match in size between predicted and ground truth masks, then calculates intersection and union of these masks to determine the generated tokens and labels. If the input is bounding box or image2text task, it assigns respective labels.",
+        "type": "comment"
+    },
+    "438": {
+        "file_id": 40,
+        "content": "            #     labels = self._pad_tensors_to_max_len(labels, gen_config.max_new_tokens + 1)\n        else:\n            labels = None\n        assert len(generated_tokens) == len(labels)\n        return loss, generated_tokens, labels\n    def de_transform_mask(self, orgw, orgh, mask):\n        long_side = max(orgw, orgh)\n        short_side = min(orgw, orgh)\n        pad = (long_side - short_side) // 2\n        mask = F.interpolate(mask, [long_side, long_side], mode=\"bilinear\", align_corners=False)\n        mask = mask > 0\n        mask[mask > 0] = 1\n        mask[mask<=0] = 0\n        if orgw < orgh:\n            mask = mask[..., :, pad: short_side + pad]\n        else:\n            mask = mask[..., pad: short_side + pad, :]\n        # mask = mask.transpose(2, 3)\n        # print(mask.shape)\n        return mask.squeeze(1)\n    def tensor2token(self, tensor_list):\n        lst = [str(tensor.cpu().tolist()) for tensor in tensor_list]\n        tokens = self.tokenizer(lst, return_tensors=\"pt\", add_special_tokens=False, padding=\"longest\")",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:194-218"
+    },
+    "439": {
+        "file_id": 40,
+        "content": "The code defines a base engine class for a machine learning model, including functions for handling generated tokens and labels, transforming masks, and converting tensor lists to tokens. The `_pad_tensors_to_max_len` function pads tensors to the maximum length defined by the `gen_config`. The `de_transform_mask` function resizes a mask to fit the longest side of an original image, then applies binary mask operations and padding as necessary. Finally, the `tensor2token` function converts tensor lists into tokens using a tokenizer, handling padding for longest sequences.",
+        "type": "comment"
+    },
+    "440": {
+        "file_id": 40,
+        "content": "        return tokens.input_ids.to(tensor_list[0].device)\n    def _logging_generate_kwargs(self, keys):\n        if not hasattr(self, '_generate_kwargs'):\n            self._generate_kwargs = None\n        if self._generate_kwargs != keys:\n            self._generate_kwargs = keys\n            logger.warning(f\"generate use kwargs: {keys}\")\n    def save_prediction(self, predict_results, file_key_prefix='predict'):\n        if not self.is_world_process_zero():\n            return\n        import numpy as np\n        os.makedirs(self.args.output_dir, exist_ok=True)\n        np.save(os.path.join(self.args.output_dir, f\"{file_key_prefix}_predictions.npy\"), predict_results.predictions)\n        np.save(os.path.join(self.args.output_dir, f\"{file_key_prefix}_label_ids.npy\"), predict_results.label_ids)\n        preds, targets = predict_results.predictions, predict_results.label_ids\n        origin_preds, origin_targets = preds, targets\n        preds, targets = deepcopy(preds), deepcopy(targets)\n        logger.warning(f\"preds shape: {preds.shape}. targets shape: {targets.shape}\")",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:219-240"
+    },
+    "441": {
+        "file_id": 40,
+        "content": "This code appears to be part of a machine learning model's base engine. It defines a method for returning input tensor device, sets logging generation kwargs if they change, and saves prediction results in numpy format to the output directory. The code also checks if it's the world process zero (possibly for parallelism) and deepcopies some variables.",
+        "type": "comment"
+    },
+    "442": {
+        "file_id": 40,
+        "content": "        # decode text and save to json takes forever for big test set\n        os.makedirs(self.args.output_dir, exist_ok=True)\n        # with open(os.path.join(self.args.output_dir, f'{file_key_prefix}_extra_prediction.jsonl'), 'a', encoding=\"utf-8\") as g:\n        #     for p, t, pi, ti in tqdm(\n        #             zip(preds, targets, origin_preds, origin_targets),\n        #             total=len(preds), desc=f\"saving prediction for {file_key_prefix}\",\n        #     ):\n        #         p[p < 0] = self.tokenizer.pad_token_id\n        #         t[t < 0] = self.tokenizer.pad_token_id\n        #         p = self.tokenizer.decode(p, skip_special_tokens=True, clean_up_tokenization_spaces=True)\n        #         t = self.tokenizer.decode(t, skip_special_tokens=True, clean_up_tokenization_spaces=True)\n        #         obj = dict(\n        #             pred=p,\n        #             target=t,\n        #             # pred_id=pi.tolist(),\n        #             # target_id=ti.tolist(),\n        #         )\n        #         g.write(json.dumps(obj) + '\\n')",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:242-259"
+    },
+    "443": {
+        "file_id": 40,
+        "content": "This code snippet saves prediction data from the model to a JSONL file. It creates an output directory if it doesn't exist, and then iterates through preds and targets, encoding them, decoding them, and saving them in a dictionary format with 'pred' and 'target' keys. The dictionary objects are then written to the JSONL file one by one.",
+        "type": "comment"
+    },
+    "444": {
+        "file_id": 40,
+        "content": "        #         g.flush()\n    # transformers + FSDP + saving model -> cuda OOM for small memory gpu\n    # refer: https://github.com/tatsu-lab/stanford_alpaca/issues/65\n    def save_model(self, output_dir: Optional[str] = None, _internal_call: bool = False):\n        if self.fsdp is not None:\n            if output_dir is None:\n                output_dir = self.args.output_dir\n            from torch.distributed.fsdp import (\n                FullyShardedDataParallel as FSDP,\n                FullStateDictConfig,\n                StateDictType,\n            )\n            save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)\n            with FSDP.state_dict_type(self.model, StateDictType.FULL_STATE_DICT, save_policy):\n                cpu_state_dict = self.model.state_dict()\n            if self.args.should_save:\n                self._save(output_dir, state_dict=cpu_state_dict)  # noqa\n            # Push to the Hub when `save_model` is called by the user.\n            if self.args.push_to_hub and not _internal_call:",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:260-279"
+    },
+    "445": {
+        "file_id": 40,
+        "content": "This code saves the model in a specific way to avoid CUDA out of memory (OOM) errors when using transformers and FullyShardedDataParallel (FSDP). It offloads the state dictionary to CPU only for rank 0, then saves it if necessary. Additionally, it pushes the saved model to the Hub if not called internally.",
+        "type": "comment"
+    },
+    "446": {
+        "file_id": 40,
+        "content": "                self.push_to_hub(commit_message=\"Model save\")\n        else:\n            super().save_model(output_dir, _internal_call)\n    def plot_loss(self) -> None:\n        if not self.is_world_process_zero():\n            return\n        training_args = self.args\n        FIGURE_NAME = \"trainer_state.png\"\n        import matplotlib.pyplot as plt\n        data = json.load(open(os.path.join(training_args.output_dir, TRAINER_STATE_NAME), \"r\"))\n        train_steps, train_losses = [], []\n        for i in range(len(data[\"log_history\"]) - 1):\n            train_steps.append(data[\"log_history\"][i][\"step\"])\n            train_losses.append(data[\"log_history\"][i][\"loss\"])\n        plt.figure()\n        plt.plot(train_steps, train_losses)\n        plt.title(\"training loss of {}\".format(training_args.output_dir))\n        plt.xlabel(\"step\")\n        plt.ylabel(\"training loss\")\n        plt.savefig(os.path.join(training_args.output_dir, FIGURE_NAME), format=\"png\", transparent=True, dpi=300)\n        print(\"Figure saved: {}\".format(os.path.join(training_args.output_dir, FIGURE_NAME)))",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:280-302"
+    },
+    "447": {
+        "file_id": 40,
+        "content": "This code snippet saves a model and plots the training loss. If not the main process, it returns without doing anything. Else, it calls `save_model` and then plots the training loss for all steps in `log_history`. The plot is saved as \"trainer_state.png\" in the output directory with a title displaying the output directory.",
+        "type": "comment"
+    },
+    "448": {
+        "file_id": 40,
+        "content": "class Seq2SeqDataCollator(DataCollatorForSeq2Seq):\n    def __init__(\n            self,\n            inference_mode: bool = False,\n            **kwargs,\n    ):\n        self.inference_mode = inference_mode\n        self.text_keys = ['input_ids', 'labels', 'attention_mask']\n        super().__init__(**kwargs)\n    def __call__(self, features: Sequence[Dict[str, Sequence]], return_tensors=None) -> Dict[str, torch.Tensor]:\n        # evaluation/inference adopts left-padding while training adopts right-padding\n        text_features = [{k: feature[k] for k in self.text_keys if k in feature} for feature in features]\n        if self.inference_mode:\n            old_padding_side = self.tokenizer.padding_side\n            self.tokenizer.padding_side = 'left'\n            text_features = super().__call__(text_features)\n            self.tokenizer.padding_side = old_padding_side\n        else:\n            old_padding_side = self.tokenizer.padding_side\n            self.tokenizer.padding_side = 'right'\n            text_features = super().__call__(text_features)",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:305-327"
+    },
+    "449": {
+        "file_id": 40,
+        "content": "The code defines a Seq2SeqDataCollator class, which is a subclass of DataCollatorForSeq2Seq. It has an inference_mode parameter that determines whether to use left or right padding for features. If inference mode is on, it uses left padding; otherwise, it uses right padding. The padding side is temporarily changed using the tokenizer's padding_side attribute, and then reverted back to its original value after collating the features.",
+        "type": "comment"
+    },
+    "450": {
+        "file_id": 40,
+        "content": "            self.tokenizer.padding_side = old_padding_side\n        return text_features\nclass Seq2Seq2DataCollatorWithImage(Seq2SeqDataCollator):\n    def __init__(self, preprocessor, **kwargs):\n        super().__init__(tokenizer=preprocessor['text'], **kwargs)\n        # sometimes there is either no location input or output in the current batch\n        # which will make some parameters untrained in the batch.\n        # use a mock annotation to prevent error\n        self.mock = torch.load(\"mock.pth\")\n    # noinspection PyMethodMayBeStatic\n    def _image_process(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:\n        images = [feature['image'] for feature in features]\n        images = torch.stack(images, dim=0)\n        ret = dict(images=images)\n        return ret\n    def __call__(self, features: List[Dict[str, Any]], return_tensors=None) -> Dict[str, Any]:\n        if not self.inference_mode and not (\"masks_sam\" in features[0]):\n            features.append(self.mock)\n        loc_inputs = [x['loc_inputs'] for x in features]",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:328-351"
+    },
+    "451": {
+        "file_id": 40,
+        "content": "This code initializes a data collator class that handles both text and image data. It uses a tokenizer to process text features, pads sequences based on the padding side, and includes a mock annotation for cases with untrained parameters. The `_image_process` method processes image features by stacking them into a tensor, and the `__call__` method checks for missing \"masks_sam\" in features and adds a mock annotation if necessary.",
+        "type": "comment"
+    },
+    "452": {
+        "file_id": 40,
+        "content": "        loc_targets = [x['loc_targets'] for x in features]\n        ret = super().__call__(features, return_tensors)\n        image_outputs = self._image_process(features)\n        ret.update(image_outputs)\n        ret[\"loc_inputs\"] = torch.tensor([list(a) for b in loc_inputs for a in b])\n        ret[\"loc_targets\"] = torch.tensor([list(a) for b in loc_targets for a in b])\n        if \"images_sam\" in features[0]:\n            ret['images_sam'] = torch.stack([f[\"images_sam\"] for f in features], dim=0)\n        if \"masks_sam\" in features[0]:\n            ret['masks_sam'] = [torch.stack(f[\"masks_sam\"], 0) for f in features]\n            ret['img_size'] = torch.stack([f[\"img_size\"] for f in features], 0)\n            ret['unresized_masks'] = [f[\"unresized_masks\"] for f in features]\n            # ret['masks_sam'] = [y for x in ret[\"masks_sam\"] for y in x]\n        return ret",
+        "type": "code",
+        "location": "/mllm/engine/base_engine.py:352-366"
+    },
+    "453": {
+        "file_id": 40,
+        "content": "This code performs image and mask processing for a model. It retrieves the features, processes the images using _image_process method, updates the return dictionary with image outputs, converts loc_targets to tensor, and optionally adds images_sam and masks_sam tensors if present in features. The img_size, unresized_masks are also added to the return dictionary if present. Finally, it returns the updated dictionary as output.",
+        "type": "comment"
+    },
+    "454": {
+        "file_id": 41,
+        "content": "/mllm/engine/builder.py",
+        "type": "filepath"
+    },
+    "455": {
+        "file_id": 41,
+        "content": "This function, `prepare_trainer_collator`, takes model arguments and a preprocessor dictionary as input. It determines the trainer class based on the model type and creates a data collator function using Seq2Seq2DataCollatorWithImage. The function returns a tuple containing the trainer class and a dictionary of train and eval data collators for inference modes False (train) and True (eval).",
+        "type": "summary"
+    },
+    "456": {
+        "file_id": 41,
+        "content": "from functools import partial\nfrom typing import Tuple, Dict, Any, Type\nfrom transformers.trainer import DataCollator\nfrom .nextchat import NextChatTrainer\nfrom .base_engine import TrainerForMMLLM, Seq2Seq2DataCollatorWithImage\nTYPE2TRAINER = {\n    'nextchat': NextChatTrainer,\n}\ndef prepare_trainer_collator(\n        model_args,\n        preprocessor: Dict[str, Any],\n        collator_kwargs: Dict[str, Any]\n) -> Tuple[Type[TrainerForMMLLM], Dict[str, DataCollator]]:\n    type_ = model_args.type\n    trainer_cls = TYPE2TRAINER.get(type_, NextChatTrainer)\n    data_collator_func = partial(\n        Seq2Seq2DataCollatorWithImage,\n        preprocessor=preprocessor,\n        **collator_kwargs,\n    )\n    data_collator_dict = {\n        \"train_collator\": data_collator_func(inference_mode=False),\n        \"eval_collator\": data_collator_func(inference_mode=True),\n    }\n    return trainer_cls, data_collator_dict",
+        "type": "code",
+        "location": "/mllm/engine/builder.py:1-30"
+    },
+    "457": {
+        "file_id": 41,
+        "content": "This function, `prepare_trainer_collator`, takes model arguments and a preprocessor dictionary as input. It determines the trainer class based on the model type and creates a data collator function using Seq2Seq2DataCollatorWithImage. The function returns a tuple containing the trainer class and a dictionary of train and eval data collators for inference modes False (train) and True (eval).",
+        "type": "comment"
+    },
+    "458": {
+        "file_id": 42,
+        "content": "/mllm/engine/nextchat.py",
+        "type": "filepath"
+    },
+    "459": {
+        "file_id": 42,
+        "content": "This code defines `NextChatTrainer` class, inheriting from `TrainerForMMLLM`, and includes a method _save() for saving model's state dictionary, focusing on 'mm_projector', 'embed_tokens', and 'embed_in'. It creates a folder for storing MM projector weights and saves them accordingly.",
+        "type": "summary"
+    },
+    "460": {
+        "file_id": 42,
+        "content": "import os\nfrom typing import Optional\nimport torch\nfrom transformers.trainer import unwrap_model\nfrom .base_engine import TrainerForMMLLM\nclass NextChatTrainer(TrainerForMMLLM):\n    def _save(self, output_dir: Optional[str] = None, state_dict=None):\n        if getattr(self.args, 'tune_mm_mlp_adapter', False):\n            # Save the model\n            _state_dict = state_dict\n            if _state_dict is None:\n                # Only save the model itself if we are using distributed training\n                model_to_save = unwrap_model(self.model)\n                _state_dict = model_to_save.state_dict()\n            weight_to_save = {}\n            keys_to_match = ['mm_projector', 'embed_tokens', 'embed_in']\n            for k, v in _state_dict.items():\n                if any(key_match in k for key_match in keys_to_match):\n                    weight_to_save[k] = v\n            current_folder = output_dir.split('/')[-1]\n            parent_folder = os.path.dirname(output_dir)\n            if current_folder.startswith('checkpoint-'):",
+        "type": "code",
+        "location": "/mllm/engine/nextchat.py:1-28"
+    },
+    "461": {
+        "file_id": 42,
+        "content": "The code snippet defines a class called `NextChatTrainer` that inherits from `TrainerForMMLLM`. It has a method `_save()` for saving the model's state dictionary, specifically focusing on keys related to 'mm_projector', 'embed_tokens', and 'embed_in'. The saved weights are stored in the 'weight_to_save' dictionary. If distributed training is used, it saves only the model itself by unwrapping it before saving the state dictionary.",
+        "type": "comment"
+    },
+    "462": {
+        "file_id": 42,
+        "content": "                mm_projector_folder = os.path.join(parent_folder, \"mm_projector\")\n                os.makedirs(mm_projector_folder, exist_ok=True)\n                torch.save(weight_to_save, os.path.join(mm_projector_folder, f'{current_folder}.bin'))\n            else:\n                torch.save(weight_to_save, os.path.join(output_dir, f'mm_projector.bin'))\n        super(NextChatTrainer, self)._save(output_dir, state_dict)",
+        "type": "code",
+        "location": "/mllm/engine/nextchat.py:29-34"
+    },
+    "463": {
+        "file_id": 42,
+        "content": "This code snippet creates a folder for storing the MM projector weights and saves the weights accordingly, based on whether a specific directory exists or not. If the directory doesn't exist, it is created. Then it saves the weights in a bin file with the current folder name. If the directory exists, the weights are saved in a bin file named \"mm_projector\". The method then calls the parent class's _save() method.",
+        "type": "comment"
+    },
+    "464": {
+        "file_id": 43,
+        "content": "/mllm/models/__init__.py",
+        "type": "filepath"
+    },
+    "465": {
+        "file_id": 43,
+        "content": "These lines import the 'nextchat' module from the same directory and the 'load_pretrained' function from the 'builder' module, which may be used to load pre-trained models.",
+        "type": "summary"
+    },
+    "466": {
+        "file_id": 43,
+        "content": "from . import nextchat\nfrom .builder import load_pretrained",
+        "type": "code",
+        "location": "/mllm/models/__init__.py:1-3"
+    },
+    "467": {
+        "file_id": 43,
+        "content": "These lines import the 'nextchat' module from the same directory and the 'load_pretrained' function from the 'builder' module, which may be used to load pre-trained models.",
+        "type": "comment"
+    },
+    "468": {
+        "file_id": 44,
+        "content": "/mllm/models/builder/__init__.py",
+        "type": "filepath"
+    },
+    "469": {
+        "file_id": 44,
+        "content": "This code imports the 'load_pretrained' function from the 'builder' module in the same directory. The 'load_pretrained' function is likely used to load pre-existing models for further processing or training.",
+        "type": "summary"
+    },
+    "470": {
+        "file_id": 44,
+        "content": "from .builder import load_pretrained",
+        "type": "code",
+        "location": "/mllm/models/builder/__init__.py:1-1"
+    },
+    "471": {
+        "file_id": 44,
+        "content": "This code imports the 'load_pretrained' function from the 'builder' module in the same directory. The 'load_pretrained' function is likely used to load pre-existing models for further processing or training.",
+        "type": "comment"
+    },
+    "472": {
+        "file_id": 45,
+        "content": "/mllm/models/builder/build_nextchat.py",
+        "type": "filepath"
+    },
+    "473": {
+        "file_id": 45,
+        "content": "The code initializes and configures NextChat model, tokenizer, vision model, and sets device, image tokenization options. It also modifies model parameters, resizes tokenizer, and updates input/output embeddings.",
+        "type": "summary"
+    },
+    "474": {
+        "file_id": 45,
+        "content": "import json\nfrom typing import Dict, Any, Tuple\nimport torch\nimport transformers\nfrom torch import nn\nfrom ..nextchat.nextchat_seg import NextChatForSegLM\nfrom ..nextchat.nextchat_base import NextChatForCausalLM\nPREPROCESSOR = Dict[str, Any]\nDEFAULT_PAD_TOKEN = \"[PAD]\"\nDEFAULT_EOS_TOKEN = \"</s>\"\nDEFAULT_BOS_TOKEN = \"<s>\"\nDEFAULT_UNK_TOKEN = \"<unk>\"\ndef load_pretrained_nextchat_base(model_args, training_args, **kwargs) -> Tuple[nn.Module, PREPROCESSOR]:\n    model = NextChatForCausalLM.from_pretrained(\n        model_args.model_name_or_path,\n        cache_dir=model_args.cache_dir,\n        _fast_init=False,\n        **kwargs\n    )\n    model.config.use_cache = False\n    tokenizer = transformers.AutoTokenizer.from_pretrained(\n        model_args.model_name_or_path,\n        cache_dir=model_args.cache_dir,\n        model_max_length=model_args.model_max_length,\n        padding_side=\"right\",\n        use_fast=False,\n    )\n    assert model_args.version == 'v1'\n    if model_args.version == \"v0\":\n        if tokenizer.pad_token is None:",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:1-39"
+    },
+    "475": {
+        "file_id": 45,
+        "content": "This code imports necessary libraries and defines a function that loads a pre-trained NextChat model and tokenizer. It creates an instance of the NextChatForCausalLM class from a specified model path, sets use_cache to False, and creates a tokenizer from the same model path while setting the padding side to right and use_fast to False. The code also includes an assertion that the model_args version is 'v1' and if it is not, it checks if the tokenizer has a pad_token set.",
+        "type": "comment"
+    },
+    "476": {
+        "file_id": 45,
+        "content": "            smart_tokenizer_and_embedding_resize(\n                special_tokens_dict=dict(pad_token=DEFAULT_PAD_TOKEN),\n                tokenizer=tokenizer,\n                model=model,\n            )\n        if \"llama\" in model_args.model_name_or_path:\n            tokenizer.add_special_tokens({\n                \"eos_token\": DEFAULT_EOS_TOKEN,\n                \"bos_token\": DEFAULT_BOS_TOKEN,\n                \"unk_token\": DEFAULT_UNK_TOKEN,\n            })\n    else:\n        tokenizer.pad_token = tokenizer.unk_token\n    model_vision_dict = model.model.initialize_vision_modules(\n        mm_depth=model_args.get(\"mm_projector_depth\", 1),\n        vision_tower=model_args.vision_tower,\n        mm_vision_select_layer=model_args.mm_vision_select_layer,\n        pretrained_mm_projector=model_args.pretrained_mm_projector,\n        fsdp=training_args.fsdp,\n    )\n    dtype = torch.float32\n    if training_args.fp16:\n        dtype = torch.float16\n    if training_args.bf16:\n        dtype = torch.bfloat16\n    # HACK for quantization\n    if model.model.get_vision_tower().device != torch.device('meta'):",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:40-67"
+    },
+    "477": {
+        "file_id": 45,
+        "content": "This code initializes a model for the NExT-Chat application. It tokenizes and resizes embeddings, adds special tokens if using LLAMA, and configures the vision modules. It also sets the appropriate data types based on whether to use 16-bit or 8-bit floating-point precision for training. The last line seems to be a workaround for a potential quantization issue involving the device 'meta'.",
+        "type": "comment"
+    },
+    "478": {
+        "file_id": 45,
+        "content": "        model.model.get_vision_tower().to(dtype=dtype, device=training_args.device)\n    else:\n        from transformers import CLIPVisionModel\n        model.model.vision_tower = CLIPVisionModel.from_pretrained(model_args.vision_tower)  # not quantize clip\n        # model.model.vision_tower = CLIPVisionModel.from_pretrained(model_args.vision_tower, **kwargs)  # quantize clip、\n    vision_config = model_vision_dict['vision_config']\n    model.config.mm_use_im_start_end = model_args.mm_use_im_start_end\n    vision_config.use_im_start_end = model_args.mm_use_im_start_end\n    model.initialize_vision_tokenizer(mm_use_im_start_end=model_args.mm_use_im_start_end,\n                                      tokenizer=tokenizer,\n                                      device=training_args.device,\n                                      tune_mm_mlp_adapter=model_args.tune_mm_mlp_adapter,\n                                      pretrain_mm_mlp_adapter=model_args.pretrain_mm_mlp_adapter)\n    params_no_grad = [n for n, p in model.named_parameters() if not p.requires_grad]",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:68-85"
+    },
+    "479": {
+        "file_id": 45,
+        "content": "This code is initializing and configuring the vision tower for a model. If it exists, it moves the vision tower to the specified device and dtype. Otherwise, it creates a new CLIPVisionModel from pre-trained weights. The code also sets configuration options related to image start and end tokens. Finally, it initializes the vision tokenizer and determines which parameters should not require gradients.",
+        "type": "comment"
+    },
+    "480": {
+        "file_id": 45,
+        "content": "    if len(params_no_grad) > 0:\n        if training_args.fsdp is not None and len(training_args.fsdp) > 0:\n            if len(params_no_grad) < 10:\n                print('[WARNING] Attempting to use FSDP while {} parameters do not require gradients: {}'.format(len(params_no_grad),\n                                                                                                                 params_no_grad))\n            else:\n                print('[WARNING] Attempting to use FSDP while {} parameters do not require gradients: {}...(omitted)'.format(\n                    len(params_no_grad), ', '.join(params_no_grad[:10])))\n            print(\"[WARNING] Attempting to use FSDP with partially frozen parameters, this is experimental.\")\n            print(\n                \"[WARNING] As of 4/30/23, this feature requires PyTorch-nightly build.  See here for details: https://github.com/haotian-liu/LLaVA#experimental-use-fsdp-to-save-memory-in-pretraining\")\n            from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel as FSDP",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:86-98"
+    },
+    "481": {
+        "file_id": 45,
+        "content": "This code checks if there are any parameters without gradients while using FSDP (Fully Sharded Data Parallel) and provides a warning message if the count is less than 10. It also mentions that this feature requires PyTorch-nightly build and points to a specific repository for details. The purpose is to save memory during pretraining.",
+        "type": "comment"
+    },
+    "482": {
+        "file_id": 45,
+        "content": "            def patch_FSDP_use_orig_params(func):\n                def wrap_func(*args, **kwargs):\n                    use_orig_params = kwargs.pop('use_orig_params', True)\n                    return func(*args, **kwargs, use_orig_params=use_orig_params)\n                return wrap_func\n            FSDP.__init__ = patch_FSDP_use_orig_params(FSDP.__init__)\n    preprocessor = dict(\n        image=model_vision_dict['image_processor'],\n        text=tokenizer,\n        conv=dict(\n            image_token_len=model_args.image_token_len,\n            sep_image_conv_front=model_args.sep_image_conv_front,\n            use_im_start_end=model_args.mm_use_im_start_end,\n        )\n    )\n    # for k, v in model.named_parameters():\n    #     if v.requires_grad:\n    #         print(k)\n    # TODO peft lora_model\n    import json\n    json.dump({k: bool(v.requires_grad) for k, v in model.named_parameters()}, open(\"param.json\", \"w\"))\n    return model, preprocessor\ndef load_pretrained_nextchat(model_args, training_args, **kwargs) -> Tuple[nn.Module, PREPROCESSOR]:",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:100-126"
+    },
+    "483": {
+        "file_id": 45,
+        "content": "This code defines a function `patch_FSDP_use_orig_params` that wraps the `__init__` method of the `FSDP` class. The main function, `load_pretrained_nextchat`, takes arguments `model_args` and `training_args` and returns a model and preprocessor. It also writes a JSON file containing information about which parameters require gradients in the model.",
+        "type": "comment"
+    },
+    "484": {
+        "file_id": 45,
+        "content": "    model = NextChatForSegLM.from_pretrained(\n        model_args.model_name_or_path,\n        cache_dir=model_args.cache_dir,\n        _fast_init=False,\n        sam_path=model_args.sam_path,\n        # mm_vision_tower=model_args.vision_tower,\n        **kwargs\n    )\n    model.config.use_cache = False\n    tokenizer = transformers.AutoTokenizer.from_pretrained(\n        model_args.model_name_or_path,\n        cache_dir=model_args.cache_dir,\n        model_max_length=model_args.model_max_length,\n        padding_side=\"right\",\n        use_fast=False,\n    )\n    assert model_args.version == 'v1'\n    if model_args.version == \"v0\":\n        if tokenizer.pad_token is None:\n            smart_tokenizer_and_embedding_resize(\n                special_tokens_dict=dict(pad_token=DEFAULT_PAD_TOKEN),\n                tokenizer=tokenizer,\n                model=model,\n            )\n        if \"llama\" in model_args.model_name_or_path:\n            tokenizer.add_special_tokens({\n                \"eos_token\": DEFAULT_EOS_TOKEN,\n                \"bos_token\": DEFAULT_BOS_TOKEN,",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:127-156"
+    },
+    "485": {
+        "file_id": 45,
+        "content": "This code initializes a NextChat model and tokenizer using the specified configuration. The model is initialized with `from_pretrained`, caching disabled, and an optional SAM path included. The tokenizer is also initialized using the same method and configuration. If the version is 'v0', the code checks if the pad token exists in the tokenizer, resizes the embedding, and adds EOS and BOS tokens if the model includes LLAMA.",
+        "type": "comment"
+    },
+    "486": {
+        "file_id": 45,
+        "content": "                \"unk_token\": DEFAULT_UNK_TOKEN,\n            })\n    else:\n        tokenizer.pad_token = tokenizer.unk_token\n    # model_vision_dict = model.model.initialize_vision_modules(\n    #     vision_tower=model_args.vision_tower,\n    #     mm_vision_select_layer=model_args.mm_vision_select_layer,\n    #     fsdp=training_args.fsdp,\n    # )\n    model_vision_dict = model.model.initialize_vision_modules(\n        mm_depth=model_args.get(\"mm_projector_depth\", 1),\n        vision_tower=model_args.vision_tower,\n        mm_vision_select_layer=model_args.mm_vision_select_layer,\n        pretrained_mm_projector=None,\n        fsdp=training_args.fsdp,\n    )\n    dtype = torch.float32\n    if training_args.fp16:\n        dtype = torch.float16\n    if training_args.bf16:\n        dtype = torch.bfloat16\n    # HACK for quantization\n    if model.model.get_vision_tower().device != torch.device('meta'):\n        model.model.get_vision_tower().to(dtype=dtype, device=training_args.device)\n    else:\n        from transformers import CLIPVisionModel",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:157-183"
+    },
+    "487": {
+        "file_id": 45,
+        "content": "This code initializes the vision modules for a model in NextChat, depending on the provided arguments. It sets the unk_token if necessary and handles the data type based on training arguments. If the device is not Meta, it moves the vision tower to the specified device and data type.",
+        "type": "comment"
+    },
+    "488": {
+        "file_id": 45,
+        "content": "        model.model.vision_tower = CLIPVisionModel.from_pretrained(model_args.vision_tower)  # not quantize clip\n        # model.model.vision_tower = CLIPVisionModel.from_pretrained(model_args.vision_tower, **kwargs)  # quantize clip、\n    vision_config = model_vision_dict['vision_config']\n    model.config.mm_use_im_start_end = model_args.mm_use_im_start_end\n    vision_config.use_im_start_end = model_args.mm_use_im_start_end\n    model.initialize_vision_tokenizer(mm_use_im_start_end=model_args.mm_use_im_start_end,\n                                      tokenizer=tokenizer,\n                                      device=training_args.device,\n                                      tune_mm_mlp_adapter=model_args.tune_mm_mlp_adapter,\n                                      pretrain_mm_mlp_adapter=model_args.pretrain_mm_mlp_adapter)\n    # grad check\n    model.requires_grad_(False)\n    # model.model.vision_tower.requires_grad_(False)\n    model.seg_prompt_mlp.requires_grad_(True)\n    # model.sam.model.prompt_encoder.requires_grad_(True)",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:184-201"
+    },
+    "489": {
+        "file_id": 45,
+        "content": "This code initializes a CLIP Vision Model, sets model parameters, and configures the vision tokenizer. It then disables gradient tracking for most components except the seg_prompt_mlp, prompt_encoder, and sam.model.prompt_encoder.",
+        "type": "comment"
+    },
+    "490": {
+        "file_id": 45,
+        "content": "    # model.sam.requires_grad_(False)\n    model.sam.model.mask_decoder.requires_grad_(True)\n    params_no_grad = [n for n, p in model.named_parameters() if not p.requires_grad]\n    if len(params_no_grad) > 0:\n        if training_args.fsdp is not None and len(training_args.fsdp) > 0:\n            if len(params_no_grad) < 10:\n                print('[WARNING] Attempting to use FSDP while {} parameters do not require gradients: {}'.format(len(params_no_grad),\n                                                                                                                 params_no_grad))\n            else:\n                print('[WARNING] Attempting to use FSDP while {} parameters do not require gradients: {}...(omitted)'.format(\n                    len(params_no_grad), ', '.join(params_no_grad[:10])))\n            print(\"[WARNING] Attempting to use FSDP with partially frozen parameters, this is experimental.\")\n            print(\n                \"[WARNING] As of 4/30/23, this feature requires PyTorch-night",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:202-216"
+    },
+    "491": {
+        "file_id": 45,
+        "content": "This code is setting the requires_grad attribute of a model's sam, mask_decoder to True while turning off gradients for other parameters. It also warns if there are less than 10 parameters without gradients when using FSDP (Fully Sharded Data Parallel), which is experimental and requires PyTorch-nightly.",
+        "type": "comment"
+    },
+    "492": {
+        "file_id": 45,
+        "content": "ly build.  See here for details: https://github.com/haotian-liu/LLaVA#experimental-use-fsdp-to-save-memory-in-pretraining\")\n            from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel as FSDP\n            def patch_FSDP_use_orig_params(func):\n                def wrap_func(*args, **kwargs):\n                    use_orig_params = kwargs.pop('use_orig_params', True)\n                    return func(*args, **kwargs, use_orig_params=use_orig_params)\n                return wrap_func\n            FSDP.__init__ = patch_FSDP_use_orig_params(FSDP.__init__)\n    preprocessor = dict(\n        image=model_vision_dict['image_processor'],\n        text=tokenizer,\n        conv=dict(\n            image_token_len=model_args.image_token_len,\n            sep_image_conv_front=model_args.sep_image_conv_front,\n            use_im_start_end=model_args.mm_use_im_start_end,\n        )\n    )\n    # TODO peft lora_model\n    import json\n    json.dump({k: bool(v.requires_grad) for k, v in model.named_parameters()}, open(\"param.json\", \"w\"))",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:216-240"
+    },
+    "493": {
+        "file_id": 45,
+        "content": "This code imports FullyShardedDataParallel (FSDP) from torch.distributed and patches its __init__ method to allow using original parameters. It then defines a preprocessor dictionary containing image, text, and conv fields with various arguments. Finally, it dumps a JSON file containing whether each model parameter requires gradients or not.",
+        "type": "comment"
+    },
+    "494": {
+        "file_id": 45,
+        "content": "    return model, preprocessor\ndef smart_tokenizer_and_embedding_resize(\n        special_tokens_dict: Dict,\n        tokenizer: transformers.PreTrainedTokenizer,\n        model: transformers.PreTrainedModel,\n):\n    \"\"\"Resize tokenizer and embedding.\n    Note: This is the unoptimized version that may make your embedding size not be divisible by 64.\n    \"\"\"\n    num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)\n    model.resize_token_embeddings(len(tokenizer))\n    if num_new_tokens > 0:\n        input_embeddings = model.get_input_embeddings().weight.data\n        output_embeddings = model.get_output_embeddings().weight.data\n        input_embeddings_avg = input_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)\n        output_embeddings_avg = output_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)\n        input_embeddings[-num_new_tokens:] = input_embeddings_avg\n        output_embeddings[-num_new_tokens:] = output_embeddings_avg",
+        "type": "code",
+        "location": "/mllm/models/builder/build_nextchat.py:241-264"
+    },
+    "495": {
+        "file_id": 45,
+        "content": "This function resizes the tokenizer and embedding in a model by adding special tokens, updating the input and output embeddings, and averaging new token embeddings to ensure they are divisible by 64.",
+        "type": "comment"
+    },
+    "496": {
+        "file_id": 46,
+        "content": "/mllm/models/builder/builder.py",
+        "type": "filepath"
+    },
+    "497": {
+        "file_id": 46,
+        "content": "This code is for building and loading pre-trained models in the NExT-Chat framework. It defines a function called \"load_pretrained\" that takes model arguments and training arguments as input and returns the loaded model and its associated preprocessor. The function checks the \"type\" argument to determine which specific pre-trained model to load: either \"nextchat\", \"nextchat_seg\", or an unsupported type. If an unsupported type is given, it raises an assertion error.",
+        "type": "summary"
+    },
+    "498": {
+        "file_id": 46,
+        "content": "from typing import Dict, Any, Tuple\nfrom torch import nn\nfrom .build_nextchat import load_pretrained_nextchat, load_pretrained_nextchat_base\nPREPROCESSOR = Dict[str, Any]\n# TODO: Registry\ndef load_pretrained(model_args, training_args) -> Tuple[nn.Module, PREPROCESSOR]:\n    type_ = model_args.type\n    if type_ == 'nextchat':\n        return load_pretrained_nextchat_base(model_args, training_args)\n    elif type_ == \"nextchat_seg\":\n        return load_pretrained_nextchat(model_args, training_args)\n    else:\n        assert False",
+        "type": "code",
+        "location": "/mllm/models/builder/builder.py:1-17"
+    },
+    "499": {
+        "file_id": 46,
+        "content": "This code is for building and loading pre-trained models in the NExT-Chat framework. It defines a function called \"load_pretrained\" that takes model arguments and training arguments as input and returns the loaded model and its associated preprocessor. The function checks the \"type\" argument to determine which specific pre-trained model to load: either \"nextchat\", \"nextchat_seg\", or an unsupported type. If an unsupported type is given, it raises an assertion error.",
+        "type": "comment"
+    }
+}

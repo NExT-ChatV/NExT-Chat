@@ -1,0 +1,10 @@
+{
+    "summary": "This code imports necessary classes and functions from the \"base_conversation\" module, including SeparatorStyle, Conversation, register_conv_template, and get_conv_template. It is likely used for initialization purposes or to establish common functionalities within this specific file or module.",
+    "details": [
+        {
+            "comment": "This code imports necessary classes and functions from the \"base_conversation\" module, including SeparatorStyle, Conversation, register_conv_template, and get_conv_template. It is likely used for initialization purposes or to establish common functionalities within this specific file or module.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/conversation/__init__.py\":0-0",
+            "content": "from .base_conversation import SeparatorStyle, Conversation, register_conv_template, get_conv_template"
+        }
+    ]
+}

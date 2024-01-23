@@ -1,0 +1,10 @@
+{
+    "summary": "This code sets the base configuration, training arguments and model arguments for a nextchat stage 3 task in a specific codebase. It specifies the dataset, model, and trainings parameters such as number of epochs and output directory path. The conv_args dictionary contains tokenize_kwargs with truncation size set to 4096 and model_name_or_path is set to None.",
+    "details": [
+        {
+            "comment": "This code sets the base configuration, training arguments and model arguments for a nextchat stage 3 task in a specific codebase. It specifies the dataset, model, and trainings parameters such as number of epochs and output directory path. The conv_args dictionary contains tokenize_kwargs with truncation size set to 4096 and model_name_or_path is set to None.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/config/nextchat_stage3.py\":0-13",
+            "content": "_base_ = ['_base_/dataset/nextchat_stage3.py', '_base_/model/nextchat.py', '_base_/train/nextchat_non.py']\ntraining_args = dict(\n    num_train_epochs=3,\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n)\nmodel_args = dict(\n    type='nextchat_seg',\n    conv_args=dict(\n        tokenize_kwargs=dict(truncation_size=4096),\n    ),\n    model_name_or_path=None,\n)"
+        }
+    ]
+}

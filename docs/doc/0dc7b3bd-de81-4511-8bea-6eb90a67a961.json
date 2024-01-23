@@ -1,0 +1,10 @@
+{
+    "summary": "This code imports the 'load_pretrained' function from the 'builder' module in the same directory. The 'load_pretrained' function is likely used to load pre-existing models for further processing or training.",
+    "details": [
+        {
+            "comment": "This code imports the 'load_pretrained' function from the 'builder' module in the same directory. The 'load_pretrained' function is likely used to load pre-existing models for further processing or training.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/models/builder/__init__.py\":0-0",
+            "content": "from .builder import load_pretrained"
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+{
+    "summary": "This code imports necessary modules, defines model parameters, initializes a NextChatInference model, and provides an example input for testing the model. It also includes instructions to print the response and save the generated image if needed. The IPython.embed() function is used to pause execution and allow manual interaction with the interpreter.",
+    "details": [
+        {
+            "comment": "This code imports necessary modules, defines model parameters, initializes a NextChatInference model, and provides an example input for testing the model. It also includes instructions to print the response and save the generated image if needed. The IPython.embed() function is used to pause execution and allow manual interaction with the interpreter.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/demo/bash_demo.py\":0-15",
+            "content": "from demo_util import NextChatInference\nimport sys, os\nmodel_path, vit_path = sys.argv[1], sys.argv[2]\nmodel = NextChatInference(model_path, vit_path, 576)\n# Please follow the example here\n# input = {\"text\": \"What is the possible relationship between the two people? Please include object locations.\", \"image\": \"./COCO_val2014_000000222628.jpg\"}\n# response, boxes, masks, ret_img = model(input)\n# print(response)\n# if ret_img is not None:\n#     ret_img.save(\"demo.png\")\nimport IPython\nIPython.embed()"
+        }
+    ]
+}

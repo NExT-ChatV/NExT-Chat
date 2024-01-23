@@ -1,0 +1,10 @@
+{
+    "summary": "This code defines training arguments for a machine learning model, specifying settings such as output directory, batch sizes, number of epochs, learning rate, and logging steps. It also includes options for data loading workers and whether to evaluate or predict during the training process.",
+    "details": [
+        {
+            "comment": "This code defines training arguments for a machine learning model, specifying settings such as output directory, batch sizes, number of epochs, learning rate, and logging steps. It also includes options for data loading workers and whether to evaluate or predict during the training process.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/config/_base_/train/nextchat_non.py\":0-38",
+            "content": "training_args = dict(\n    # run\n    output_dir=None,  # required. must be filled by derived configs.\n    overwrite_output_dir=True,\n    report_to='none',\n    seed=42,\n    # datasets\n    remove_unused_columns=False,\n    # train\n    do_train=True,\n    per_device_train_batch_size=8,\n    gradient_accumulation_steps=1,\n    num_train_epochs=5,\n    learning_rate=2e-5,\n    lr_scheduler_type='cosine',\n    weight_decay=0.,\n    warmup_ratio=0.03,\n    evaluation_strategy='no',\n    # train ddp\n    tf32=True,\n    bf16=True,\n    gradient_checkpointing=True,\n    # train logging\n    logging_steps=10,\n    save_strategy='steps',\n    save_steps=3000,\n    save_total_limit=10,\n    # eval and predict\n    do_eval=False,\n    do_predict=False,\n    predict_with_generate=True,\n    per_device_eval_batch_size=8,\n    dataloader_num_workers=16,\n)"
+        }
+    ]
+}

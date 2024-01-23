@@ -1,0 +1,10 @@
+{
+    "summary": "This code imports functions and classes from different modules within the NExT-Chat/mllm/dataset directory to be used in data processing and preparation. It consolidates various functionalities into a single file for easy access and management.",
+    "details": [
+        {
+            "comment": "This code imports functions and classes from different modules within the NExT-Chat/mllm/dataset directory to be used in data processing and preparation. It consolidates various functionalities into a single file for easy access and management.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/dataset/__init__.py\":0-6",
+            "content": "from .root import *\nfrom .utils import *\nfrom .process_function import *\nfrom .single_image_convsation import *\nfrom .single_image_dataset import *\nfrom .builder import prepare_data"
+        }
+    ]
+}

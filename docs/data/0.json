@@ -1,0 +1,533 @@
+{
+    "0": {
+        "file_id": 0,
+        "content": "/DATA.md",
+        "type": "filepath"
+    },
+    "1": {
+        "file_id": 0,
+        "content": "This code snippet provides instructions for downloading and organizing data files (JSONL annotations, images) adapted from Shikra. Data should be placed under the 'data' folder after extraction, while users can update image folder configuration in a specified directory or change `image_folder` field.",
+        "type": "summary"
+    },
+    "2": {
+        "file_id": 0,
+        "content": "## Data\nThe file is adapted from Shikra.\nYou can access shikra's data from [Google Driver](https://drive.google.com/file/d/1CNLu1zJKPtliQEYCZlZ8ykH00ppInnyN/view?usp=drive_link) or [Baidu Netdisk](https://pan.baidu.com/s/1qGTIqgJ54eijzT4-XJJIyg?pwd=9ri4).\nThen download the additional files in [Google Drive](https://drive.google.com/file/d/1aYXCin2ubtBylCAkNPihsJMTQlV-hJat/view?usp=sharing).\nThis compressed file **exclusively contains the annotations in jsonl** format. Once you extract this ZIP file, please ensure that you place it under the `data` folder. After extraction, the directory structure should appear as follows:\n```\n|- config\n|- mllm\n|- data\n    |-- blip_laion_cc_sbu_558k.jsonl\n    |-- CAP_coco2014_train.jsonl\n    |-- CWB_flickr30k_train.jsonl\n    ...\n```\nPlease note that the images can be downloaded separately from their official website. You can **update the dataset `image_folder` configuration in the `config/_base_/dataset/DEFAULT_XXXX_XXXXXX.py` directory accordingly**. \nFor example, if",
+        "type": "code",
+        "location": "/DATA.md:1-20"
+    },
+    "3": {
+        "file_id": 0,
+        "content": "Code snippet provides instructions for downloading and organizing data files, specifically JSONL annotations and additional images. The data is adapted from Shikra and should be placed under the `data` folder after extraction. Images can be downloaded separately from their official websites, and users need to update the dataset's image folder configuration in the specified directory.",
+        "type": "comment"
+    },
+    "4": {
+        "file_id": 0,
+        "content": " you are working with the Flickr30k trainset in `config/_base_/dataset/DEFAULT_TRAIN_DATASET.py`, you can update the `image_folder` field as follows:\n```python\nflickr=dict(\n    type='FlickrDataset',\n    filename=r'{{fileDirname}}/../../../data/CWB_flickr30k_train.jsonl',\n    image_folder=r'zz1424:s3://production-public-flickr_image/Flickr_Image/unzip/flickr30k_images/flickr30k_images',\n    template_file=r'{{fileDirname}}/template/flickr30k.json',\n    ),\n```\nto\n```python\nflickr=dict(\n    type='FlickrDataset',\n    filename=r'{{fileDirname}}/../../../data/CWB_flickr30k_train.jsonl',\n    image_folder=r'path/to/flickr30k_images/on/your/computer',\n    template_file=r'{{fileDirname}}/template/flickr30k.json',\n    ),\n```",
+        "type": "code",
+        "location": "/DATA.md:20-40"
+    },
+    "5": {
+        "file_id": 0,
+        "content": "The code snippet specifies the location of the Flickr30k trainset in `config/_base_/dataset/DEFAULT_TRAIN_DATASET.py` and provides instructions on how to update the `image_folder` field to point to a different location, either an online S3 bucket or a local path on your computer.",
+        "type": "comment"
+    },
+    "6": {
+        "file_id": 1,
+        "content": "/README.md",
+        "type": "filepath"
+    },
+    "7": {
+        "file_id": 1,
+        "content": "NextChat is a chat LMM with image-based text generation models. Training involves three stages: VL+Detection Pre-training, VL+Detection Instruction Following, and VL+Detection+Segmentation. The `nextchat-7b-336-v1` model has been updated for better performance and easier training templates.",
+        "type": "summary"
+    },
+    "8": {
+        "file_id": 1,
+        "content": "# NExT-Chat\nNExT-Chat: An LMM for Chat, Detection and Segmentation\n[Ao Zhang](https://waxnkw.github.io/), [Yuan Yao](https://yaoyuanthu.github.io/), [Wei Ji](https://jiwei0523.github.io/), [Zhiyuan Liu](https://nlp.csai.tsinghua.edu.cn/~lzy/), and [Tat-Seng Chua](https://www.chuatatseng.com/)\n**National University of Singapore, Tsinghua University**\nProject page with demo: [NExT-Chat](https://next-chatv.github.io/)\n-----------------\n<a href='https://next-chatv.github.io/'><img src='https://img.shields.io/badge/Project-Page-Green'></a>\n<a href='https://arxiv.org/abs/2311.04498'><img src='https://img.shields.io/badge/Paper-Arxiv-red'></a>\n<a href='https://ee569fe29733644a33.gradio.live'><img src='https://img.shields.io/badge/Demo-Page-blue'></a> \n[![YouTube](https://badges.aleen42.com/src/youtube.svg)](https://www.youtube.com/watch?v=q0EdZgv6uQg)\n## What's New: 🎉 \n- [x] 2023.12.12 Initial code released\n## Table of Contents\n  - [Introduction](#introduction)\n  - [Installation](#installation)\n  - [Model Zoo](#model-zoo)",
+        "type": "code",
+        "location": "/README.md:1-26"
+    },
+    "9": {
+        "file_id": 1,
+        "content": "NExT-Chat is an LMM (Language Modeling and Machin...",
+        "type": "comment"
+    },
+    "10": {
+        "file_id": 1,
+        "content": "  - [Data Preparation](#data-preparation)\n  - [Demo](#demo)\n  - [Evaluation](#evaluation)\n  - [Training](#training)\n  - [Examples](#examples)\n  - [Acknowledgement](#acknowledgement)\n## Introduction\nAn LMM for chat with detection and segmentation results.\nThe framework is shown:\n[![demo](https://next-chatv.github.io/images/method1.png)](https://next-chatv.github.io)\n## Installation\nPlease clone the repo:\n```shell\ngit clone https://github.com/NExT-ChatV/NExT-Chat.git\ncd NExT-Chat\n```\nThen install requirements:\n```shell\npip install -r requirements.txt\n```\n## Model Zoo\nCurrently, we totally have 3 models:\n|Version| ckpt | LM Size | ViT Res. | GPU Mem. |Comment|\n|----------|----------|----------|---------|----------|----------|\n|v1| [nextchat-7b-336](https://huggingface.co/AoZhang/nextchat-7b-336) | 7B | 336x336 | ~32G     |recommended|\n|v0| [nextchat-7b-224](https://www.modelscope.cn/models/ZhangAo6/nextchat/files) | 7B | 224x224 | ~24G     |not recommended|\n|v0| [nextchat-13b-224](https://www.modelscope.cn/models/ZhangAo6/nextchat/files) | 7B | 224x224 | ~35G     |not recommended|",
+        "type": "code",
+        "location": "/README.md:27-58"
+    },
+    "11": {
+        "file_id": 1,
+        "content": "The code provides an introduction to the NExT-Chat, a Long Message Model (LMM) for chat with detection and segmentation results. The framework is demonstrated in a provided image. It explains how to install the model, cloning the repo and installing the requirements. There are currently three models available, with different sizes, resolutions, and GPU memory usage, with one recommended version and two not recommended versions.",
+        "type": "comment"
+    },
+    "12": {
+        "file_id": 1,
+        "content": "We recommend to use the `nextchat-7b-336-v1`, which can achieve better performance.\nMoreover, we also update the training templates for `nextchat-7b-336-v1` to make it easier to use.\nYou can refer to [templates](config/_base_/dataset/template/) for details in eliciting concrete abilities.\nSome examples:\n1. Localize a object:\n|Version| Template |\n|----------|----------|\n|v0|Where is XXX in the <image>?|\n|v1|Where is XXX in the image?|\n2. Grounded Caption:\n|Version| Template |\n|----------|---------|\n|v0|Can you provide a description of the image <image> and include the locations for each mentioned object?|\n|v1|Can you describe the image and include object locations?|\n3. VQA+Localization\n|Version| Template |\n|----------|----------|\n|v0|<Question> Please include object locations and explain.|\n|v1|<Question> Please mention related object locations.|\n## Data Preparation\nPlease refer to [DATA.md](DATA.md).\n## Demo\nPlease first download the model weights from [huggingface](https://huggingface.co/AoZhang/nextchat-7b-336/tree/main) or our [link](https://thunlp.oss-cn-qingdao.aliyuncs.com/nextchat-7b-336.tar.gz).",
+        "type": "code",
+        "location": "/README.md:60-89"
+    },
+    "13": {
+        "file_id": 1,
+        "content": "This code provides an updated version of the `nextchat-7b-336-v1` model, with improved performance and easier-to-use training templates. The templates are available in [templates](config/_base_/dataset/template/) for localization, grounded captioning, and VQA+Localization tasks. Users need to refer to the DATA.md file for data preparation, and download the model weights from either HuggingFace or a provided link.",
+        "type": "comment"
+    },
+    "14": {
+        "file_id": 1,
+        "content": "We also use OpenAI CLIP [ViT model](https://huggingface.co/openai/clip-vit-large-patch14-336/tree/main) as the visual encoder. Please make sure that you can connect to huggingface or you can download it to your local directory.\nThen, download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.\n**Web Demo**\nPlease run:\n```shell\nCUDA_VISIBLE_DEVICES=\"0\" python mllm/demo/web_demo.py --model_path path/to/model_weights --vit_path path/to/openai-clip-vit-large-patch14-336\n```\nIf you can connect to huggingface, just run:\n```shell\nCUDA_VISIBLE_DEVICES=\"0\" python mllm/demo/web_demo.py --model_path AoZhang/nextchat-7b-336 --vit_path openai/clip-vit-large-patch14-336\n```\n**Bash Demo**\n```shell\nCUDA_VISIBLE_DEVICES=\"0\" python mllm/demo/bash_demo.py path/to/model_weights  path/to/openai-clip-vit-large-patch14-336",
+        "type": "code",
+        "location": "/README.md:90-107"
+    },
+    "15": {
+        "file_id": 1,
+        "content": "This code snippet instructs the user to use a specific pre-trained visual encoder model and segment anything (SAM) model, download them if necessary, modify the config file with their paths, and then run either web or bash demo scripts providing the respective paths. The code also provides examples for running the demos using either locally downloaded or remotely accessible models.",
+        "type": "comment"
+    },
+    "16": {
+        "file_id": 1,
+        "content": "```\nIf you can connect to huggingface, just run:\n```shell\nCUDA_VISIBLE_DEVICES=\"0\" python mllm/demo/bash_demo.py AoZhang/nextchat-7b-336  openai/clip-vit-large-patch14-336\n```\nYou can also initialize the model by yourself:\n```python\nfrom mllm.demo.demo_util import NextChatInference\nmodel = NextChatInference(model_weight_path, vit_path, 576)\n```\nYou will get into the IPython mode. Then use the model like:\n```python\ninput = {\"text\": \"What is the possible relationship between the two people? Please include object locations.\", \"image\": \"./COCO_val2014_000000222628.jpg\"}\nresponse, boxes, masks, ret_img = model(input)\n```\n## Easy Run\nWe have our old models (v0 versions) in the modelscope.\nPlease first install `pip install modelscope`.\nThen run:\n```python\nfrom modelscope import pipeline\npipe = pipeline('my-nextchat-task', 'ZhangAo6/nextchat', model_size=\"7b\") # 7b model takes around 21G GPU mem, 13b takes around 35G GPU mem\nresponse, ret_image = pipe({\"text\": \"xxxx?\", \"image\": \"xxx.jpg\"})\n# response: the text answer",
+        "type": "code",
+        "location": "/README.md:108-134"
+    },
+    "17": {
+        "file_id": 1,
+        "content": "This code provides instructions to run a NextChat model for generating text based on an input image. The user can choose between two methods: running the pre-existing models with the \"Easy Run\" option or initializing the model themselves. For the latter, the user needs to import the necessary classes and use them with the given model path, image path, and number of tokens. The \"Easy Run\" method utilizes the ModelScope library to run a specific task using pre-trained models.",
+        "type": "comment"
+    },
+    "18": {
+        "file_id": 1,
+        "content": "# ret_image: image annotated with boxes and masks\n```\n## Evaluation\nThe final result have not been updated to the arxiv.\nWe show the results here:\n### Referring Expression Segmentation (RES)\n<p align=\"center\">\n  <img src=\"https://next-chatv.github.io/images/res.png\" alt=\"p1\">\n</p>\nPlease config the `vision_tower` in the [config/_base_/model/nextchat.py]([config/_base_/model/nextchat.py]) to the path of OpenAI CLIP, if you can not connect to huggingface.\nMake sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.\n```shell\nbash eval_res.sh /path/to/checkpoint\n```\n### Referring Expression Comprehension (REC)\nAlthough it seems to be better by modeling the localization as a regression task (also validated by toy experiments),\nwe find that pixel2emb now is **hard to beat top-tier pixel2seq models** on REC (like Shikra) in the pre-training setting.",
+        "type": "code",
+        "location": "/README.md:135-157"
+    },
+    "19": {
+        "file_id": 1,
+        "content": "This code snippet is from the NExT-Chat project's README file. It explains that the result of the model evaluation has not been updated to arXiv and provides a link to view the results. The code also instructs users on how to configure the vision_tower, download SAM (Segment Anything Model), and modify sam_path in the nextchat.py file. Lastly, it mentions that the REC task is hard to beat top-tier pixel2seq models like Shikra in the pre-training setting.",
+        "type": "comment"
+    },
+    "20": {
+        "file_id": 1,
+        "content": "We guess the key factors might be to find a balance between the localization loss and LM loss, which will significantly affect the REC performance.\nWe are still working on this interesting finding and tune the model.\nIf you have some insights, welcome to discuss.\n<p align=\"center\">\n  <img src=\"https://next-chatv.github.io/images/rec.png\" alt=\"p1\">\n</p>\nPlease config the `vision_tower` in the [config/_base_/model/nextchat.py]([config/_base_/model/nextchat.py]) to the path of OpenAI CLIP, if you can not connect to huggingface.\nMake sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.\n```shell\nbash eval_rec.sh /path/to/checkpoint\n```\n### Pope (Image-level Hallucination)\n<p align=\"center\">\n  <img src=\"https://next-chatv.github.io/images/pope.png\" alt=\"p1\">\n</p>\nPlea",
+        "type": "code",
+        "location": "/README.md:158-176"
+    },
+    "21": {
+        "file_id": 1,
+        "content": "This code snippet discusses balancing localization loss and LM loss for a REC performance, suggests configuring the vision_tower in nextchat.py file, downloading SAM, modifying sam_path, and running eval_rec.sh to evaluate the model using a checkpoint. It also introduces Pope (Image-level Hallucination) and encourages insights or discussions from users.",
+        "type": "comment"
+    },
+    "22": {
+        "file_id": 1,
+        "content": "se config the `vision_tower` in the [config/_base_/model/nextchat.py]([config/_base_/model/nextchat.py]) to the path of OpenAI CLIP, if you can not connect to huggingface.\nMake sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.\n```shell\nbash eval_pope.sh /path/to/checkpoint\n```\n### RefCOCOg-google (Region Caption)\n<p align=\"center\">\n  <img src=\"https://next-chatv.github.io/images/reg_cap.png\" alt=\"p1\">\n</p>\nPlease config the `vision_tower` in the [config/_base_/model/nextchat.py]([config/_base_/model/nextchat.py]) to the path of OpenAI CLIP, if you can not connect to huggingface.\nMake sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.co",
+        "type": "code",
+        "location": "/README.md:176-189"
+    },
+    "23": {
+        "file_id": 1,
+        "content": "This code is instructing the user to configure a `vision_tower` in `[config/_base_/model/nextchat.py]` using OpenAI CLIP and ensure that they download the SAM model from the provided link. The user should also modify the `sam_path` in the same configuration file. This is to be done before running a script named 'eval_pope.sh' with the desired checkpoint path as an argument. Additionally, there is a mention of RefCOCOg-google (Region Caption) and an image link.",
+        "type": "comment"
+    },
+    "24": {
+        "file_id": 1,
+        "content": "m/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.\n```shell\nbash eval_reg_cap.sh /path/to/checkpoint\n```\n## Training\nPlease config the `vision_tower` in the [config/_base_/model/nextchat.py]([config/_base_/model/nextchat.py]) to the path of OpenAI CLIP, if you can not connect to huggingface.\nMake sure to download the [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) and modify `sam_path` in [config/_base_/model/nextchat.py](https://github.com/NExT-ChatV/NExT-Chat/blob/6e92d9b13b08e978190a00793b5e7b06d70ac236/config/_base_/model/nextchat.py#L9) to your sam path.\nOur training consists of 3 stages:\n1. VL+Detection Pre-training\n```shell\nbash run_stage1.sh\n```\n2. VL+Detection Instruction Following\n```shell\nbash run_stage2.sh output/stage1/checkpoint-65000 # or other path to your stage1 model, we use 65000 for stage2\n```\n3. VL+Detection+Segmentation\n```shell\nbash run_stage3.sh output/stage2/checkpoint-4950 # or other path to your stage2 model",
+        "type": "code",
+        "location": "/README.md:189-211"
+    },
+    "25": {
+        "file_id": 1,
+        "content": "Training consists of 3 stages: VL+Detection Pre-training, VL+Detection Instruction Following, and VL+Detection+Segmentation. Stage1 script is run_stage1.sh, Stage2 uses checkpoint from stage1 and runs with run_stage2.sh, and Stage3 uses the model from stage2 with run_stage3.sh.",
+        "type": "comment"
+    },
+    "26": {
+        "file_id": 1,
+        "content": "```\n## Examples\nExamples generated by our nextchat-13b-v0 models:\n<p align=\"center\">\n  <img src=\"https://next-chatv.github.io/demos/p1.png\" alt=\"p1\">\n</p>\n<p align=\"center\">\n  <img src=\"https://next-chatv.github.io/demos/p2.png\" alt=\"p2\">\n</p>\n<p align=\"center\">\n  <img src=\"https://next-chatv.github.io/demos/p3.png\" alt=\"p3\">\n</p>\n<p align=\"center\">\n  <img src=\"https://next-chatv.github.io/demos/p4.png\" alt=\"p4\">\n</p>\n## Acknowledgement\nThanks to [Shikra](https://github.com/shikras/shikra), [LLaVA](https://github.com/haotian-liu/LLaVA), [CogVLM](https://github.com/THUDM/CogVLM) for their excellent codes.\nOur bibtex:\n```bibtex\n@misc{zhang2023nextchat,\n      title={NExT-Chat: An LMM for Chat, Detection and Segmentation}, \n      author={Ao Zhang and Yuan Yao and Wei Ji and Zhiyuan Liu and Tat-Seng Chua},\n      year={2023},\n      eprint={2311.04498},\n      archivePrefix={arXiv},\n      primaryClass={cs.CV}\n}\n```",
+        "type": "code",
+        "location": "/README.md:212-243"
+    },
+    "27": {
+        "file_id": 1,
+        "content": "Examples: Images generated by the nextchat-13b-v0 models, showcasing their capabilities.\nAcknowledgement: Grateful to similar projects for inspiration and code contribution.\nBibtex: Provides citation details for the NExT-Chat paper in the arXiv database.",
+        "type": "comment"
+    },
+    "28": {
+        "file_id": 2,
+        "content": "/config/_base_/model/nextchat.py",
+        "type": "filepath"
+    },
+    "29": {
+        "file_id": 2,
+        "content": "This code configures a NextChat model with specific parameters and creates a NextChat model object with optional settings for token IDs.",
+        "type": "summary"
+    },
+    "30": {
+        "file_id": 2,
+        "content": "model_args = dict(\n    type='nextchat',\n    version='v1',\n    # checkpoint config\n    cache_dir=None,\n    model_name_or_path=None,\n    vision_tower=r'openai/clip-vit-large-patch14-336',\n    sam_path='/path/to/sam_vit_h_4b8939.pth',\n    pretrain_mm_mlp_adapter=None,\n    pretrained_mm_projector=None,\n    # model config\n    mm_vision_select_layer=-2,\n    model_max_length=2048,\n    mm_projector_depth=1,\n    # finetune config\n    freeze_backbone=False,\n    tune_mm_mlp_adapter=False,\n    freeze_mm_mlp_adapter=False,\n    # data process config\n    sep_image_conv_front=False,\n    image_token_len=576,\n    mm_use_im_start_end=True,\n    target_processor=dict(\n        boxes=dict(type='PlainBoxFormatter'),\n    ),\n    process_func_args=dict(\n        conv=dict(type='ChatConvProcess'),\n        target=dict(type='BoxFormatProcess'),\n        text=dict(type='ChatTextProcess'),\n        image=dict(type='ChatImageProcessor'),\n    ),\n    conv_args=dict(\n        conv_template='vicuna_v1.1',\n        transforms=dict(type='Expand2square'),\n        tokenize_kwargs=dict(truncation_size=2048),",
+        "type": "code",
+        "location": "/config/_base_/model/nextchat.py:1-42"
+    },
+    "31": {
+        "file_id": 2,
+        "content": "This code configures a NextChat model with specific parameters including the checkpoint config, model name, image vision tower, sample path, pre-trained MM projector, max length, depth of the projector, freezing settings, data processing configuration, and processing function arguments.",
+        "type": "comment"
+    },
+    "32": {
+        "file_id": 2,
+        "content": "    ),\n    gen_kwargs_set_pad_token_id=True,\n    gen_kwargs_set_bos_token_id=True,\n    gen_kwargs_set_eos_token_id=True,\n)",
+        "type": "code",
+        "location": "/config/_base_/model/nextchat.py:43-48"
+    },
+    "33": {
+        "file_id": 2,
+        "content": "This code creates a model object, NextChat, with optional parameters for setting pad_token_id, bos_token_id, and eos_token_id. These options allow specifying the token IDs for padding, beginning of sequence, and end of sequence respectively during model instantiation.",
+        "type": "comment"
+    },
+    "34": {
+        "file_id": 3,
+        "content": "/config/_base_/train/eval.py",
+        "type": "filepath"
+    },
+    "35": {
+        "file_id": 3,
+        "content": "The code snippet defines a dictionary named \"training_args\" for model training. It includes various configuration options such as the output directory, dataset handling, logging, evaluation, prediction settings, batch sizes, and data loader workers count. The arguments are set to their default values, which can be overridden by derived configs.",
+        "type": "summary"
+    },
+    "36": {
+        "file_id": 3,
+        "content": "training_args = dict(\n    # run\n    output_dir=None,  # required. must be filled by derived configs.\n    overwrite_output_dir=False,\n    report_to='none',\n    seed=42,\n    # datasets\n    remove_unused_columns=False,\n    # logging\n    logging_steps=1,\n    # eval and predict\n    do_eval=True,\n    do_predict=True,\n    bf16=True,\n    bf16_full_eval=True,\n    predict_with_generate=True,\n    per_device_eval_batch_size=16,\n    # dataloader_num_workers=4,\n)",
+        "type": "code",
+        "location": "/config/_base_/train/eval.py:1-22"
+    },
+    "37": {
+        "file_id": 3,
+        "content": "The code snippet defines a dictionary named \"training_args\" for model training. It includes various configuration options such as the output directory, dataset handling, logging, evaluation, prediction settings, batch sizes, and data loader workers count. The arguments are set to their default values, which can be overridden by derived configs.",
+        "type": "comment"
+    },
+    "38": {
+        "file_id": 4,
+        "content": "/config/_base_/train/nextchat_fsdp.py",
+        "type": "filepath"
+    },
+    "39": {
+        "file_id": 4,
+        "content": "This code defines the training arguments for a deep learning model, including options for dataset processing, training strategy, distributed data parallelism, logging and saving settings, and evaluation or prediction tasks. The default parameters are set for 5 epochs of training with a batch size of 8, using a learning rate of 2e-5 and a cosine scheduler. It also enables mixed precision training (tf32 and bf16) and gradient checkpointing to improve efficiency on NVIDIA GPUs. The model is wrapped for full-shard distributed training and uses the LlamaDecoderLayer as the layer to wrap.",
+        "type": "summary"
+    },
+    "40": {
+        "file_id": 4,
+        "content": "training_args = dict(\n    # run\n    output_dir=None,  # required. must be filled by derived configs.\n    overwrite_output_dir=True,\n    report_to='none',\n    seed=42,\n    # datasets\n    remove_unused_columns=False,\n    # train\n    do_train=True,\n    per_device_train_batch_size=8,\n    gradient_accumulation_steps=1,\n    num_train_epochs=5,\n    learning_rate=2e-5,\n    lr_scheduler_type='cosine',\n    weight_decay=0.,\n    warmup_ratio=0.03,\n    evaluation_strategy='no',\n    # train ddp\n    tf32=True,\n    bf16=True,\n    gradient_checkpointing=True,\n    fsdp=\"full_shard auto_wrap\",\n    fsdp_transformer_layer_cls_to_wrap='LlamaDecoderLayer',\n    # train logging\n    logging_steps=10,\n    save_strategy='steps',\n    save_steps=3000,\n    save_total_limit=10,\n    # eval and predict\n    do_eval=False,\n    do_predict=False,\n    predict_with_generate=True,\n    per_device_eval_batch_size=8,\n    dataloader_num_workers=16,\n)",
+        "type": "code",
+        "location": "/config/_base_/train/nextchat_fsdp.py:1-41"
+    },
+    "41": {
+        "file_id": 4,
+        "content": "This code defines the training arguments for a deep learning model, including options for dataset processing, training strategy, distributed data parallelism, logging and saving settings, and evaluation or prediction tasks. The default parameters are set for 5 epochs of training with a batch size of 8, using a learning rate of 2e-5 and a cosine scheduler. It also enables mixed precision training (tf32 and bf16) and gradient checkpointing to improve efficiency on NVIDIA GPUs. The model is wrapped for full-shard distributed training and uses the LlamaDecoderLayer as the layer to wrap.",
+        "type": "comment"
+    },
+    "42": {
+        "file_id": 5,
+        "content": "/config/_base_/train/nextchat_non.py",
+        "type": "filepath"
+    },
+    "43": {
+        "file_id": 5,
+        "content": "This code defines training arguments for a machine learning model, specifying settings such as output directory, batch sizes, number of epochs, learning rate, and logging steps. It also includes options for data loading workers and whether to evaluate or predict during the training process.",
+        "type": "summary"
+    },
+    "44": {
+        "file_id": 5,
+        "content": "training_args = dict(\n    # run\n    output_dir=None,  # required. must be filled by derived configs.\n    overwrite_output_dir=True,\n    report_to='none',\n    seed=42,\n    # datasets\n    remove_unused_columns=False,\n    # train\n    do_train=True,\n    per_device_train_batch_size=8,\n    gradient_accumulation_steps=1,\n    num_train_epochs=5,\n    learning_rate=2e-5,\n    lr_scheduler_type='cosine',\n    weight_decay=0.,\n    warmup_ratio=0.03,\n    evaluation_strategy='no',\n    # train ddp\n    tf32=True,\n    bf16=True,\n    gradient_checkpointing=True,\n    # train logging\n    logging_steps=10,\n    save_strategy='steps',\n    save_steps=3000,\n    save_total_limit=10,\n    # eval and predict\n    do_eval=False,\n    do_predict=False,\n    predict_with_generate=True,\n    per_device_eval_batch_size=8,\n    dataloader_num_workers=16,\n)",
+        "type": "code",
+        "location": "/config/_base_/train/nextchat_non.py:1-39"
+    },
+    "45": {
+        "file_id": 5,
+        "content": "This code defines training arguments for a machine learning model, specifying settings such as output directory, batch sizes, number of epochs, learning rate, and logging steps. It also includes options for data loading workers and whether to evaluate or predict during the training process.",
+        "type": "comment"
+    },
+    "46": {
+        "file_id": 6,
+        "content": "/config/nextchat_eval_multi_rec.py",
+        "type": "filepath"
+    },
+    "47": {
+        "file_id": 6,
+        "content": "This code sets up the training arguments, model arguments, and data arguments for a multi-predict evaluation of a NextChat model. It specifies output directory, disables training and evaluation, enables multi-predict mode, uses BF16 for faster inference, and defines the model's architecture and dataset configurations.",
+        "type": "summary"
+    },
+    "48": {
+        "file_id": 6,
+        "content": "_base_ = ['_base_/dataset/DEFAULT_TEST_DATASET.py', '_base_/model/nextchat.py', '_base_/train/eval.py']\ntraining_args = dict(\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n    do_train=False,\n    do_eval=False,\n    do_predict=False,\n    do_multi_predict=True,\n    fp16=False,\n    fp16_full_eval=False,\n    bf16=True,\n    bf16_full_eval=True,\n    per_device_eval_batch_size=8,\n)\nmodel_args = dict(\n    model_name_or_path=None,\n    conv_args=dict(\n        conv_template='vicuna_v1.1',\n        transforms=dict(type='Expand2square'),\n        tokenize_kwargs=dict(truncation_size=2048),\n    ),\n)\ndata_args = dict(\n    train=None,\n    validation=None,\n    test=None,\n    multitest={k: {'cfg': v, 'compute_metric': dict(type='RECComputeMetrics')} for k, v in _base_.DEFAULT_TEST_REC_VARIANT.items()},\n    compute_metric=None,\n    # padding collator kwargs\n    collator_kwargs=dict(\n        padding=True,\n        max_length=1024,\n    ),\n    # generate config\n    gen_kwargs=dict(\n        max_new_tokens=1024,\n        num_beams=1,\n    ),\n)",
+        "type": "code",
+        "location": "/config/nextchat_eval_multi_rec.py:1-46"
+    },
+    "49": {
+        "file_id": 6,
+        "content": "This code sets up the training arguments, model arguments, and data arguments for a multi-predict evaluation of a NextChat model. It specifies output directory, disables training and evaluation, enables multi-predict mode, uses BF16 for faster inference, and defines the model's architecture and dataset configurations.",
+        "type": "comment"
+    },
+    "50": {
+        "file_id": 7,
+        "content": "/config/nextchat_eval_multi_res.py",
+        "type": "filepath"
+    },
+    "51": {
+        "file_id": 7,
+        "content": "The code prepares a \"nextchat\" model for evaluation and prediction by configuring training arguments, data inputs, metrics, and generating new tokens using a single beam search approach.",
+        "type": "summary"
+    },
+    "52": {
+        "file_id": 7,
+        "content": "_base_ = ['_base_/dataset/DEFAULT_TEST_DATASET.py', '_base_/model/nextchat.py', '_base_/train/eval.py']\ntraining_args = dict(\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n    do_train=False,\n    do_eval=False,\n    do_predict=False,\n    do_multi_predict=True,\n    fp16=False,\n    fp16_full_eval=False,\n    bf16=True,\n    bf16_full_eval=True,\n    per_device_eval_batch_size=1,\n)\nmodel_args = dict(\n    type='nextchat_seg',\n    model_name_or_path=None,\n    conv_args=dict(\n        conv_template='vicuna_v1.1',\n        transforms=dict(type='Expand2square'),\n        tokenize_kwargs=dict(truncation_size=2048),\n    ),\n)\ndata_args = dict(\n    train=None,\n    validation=None,\n    test=None,\n    multitest={k: {'cfg': v, 'compute_metric': dict(type='RESComputeMetrics')} for k, v in _base_.DEFAULT_TEST_RES_VARIANT.items()},\n    compute_metric=None,\n    # padding collator kwargs\n    collator_kwargs=dict(\n        padding=True,\n        max_length=1024,\n    ),\n    dataset_wrapper='conv_seg',\n    # generate config\n    gen_kwargs=dict(\n        max_new_tokens=20,",
+        "type": "code",
+        "location": "/config/nextchat_eval_multi_res.py:1-45"
+    },
+    "53": {
+        "file_id": 7,
+        "content": "This code is setting up a configuration for evaluating and predicting performance of a pre-trained \"nextchat\" model. It will create an output directory, set training arguments such as batch size and model type, specify data inputs (train, validation, test), and configure the prediction process including metric calculations and generation of new tokens.",
+        "type": "comment"
+    },
+    "54": {
+        "file_id": 7,
+        "content": "        num_beams=1,\n    ),\n)",
+        "type": "code",
+        "location": "/config/nextchat_eval_multi_res.py:46-48"
+    },
+    "55": {
+        "file_id": 7,
+        "content": "This code sets the number of beams to 1, indicating a single beam search approach for evaluation in multi-response generation.",
+        "type": "comment"
+    },
+    "56": {
+        "file_id": 8,
+        "content": "/config/nextchat_eval_pope.py",
+        "type": "filepath"
+    },
+    "57": {
+        "file_id": 8,
+        "content": "This code defines base configurations for training, evaluation, and prediction tasks in the NExT-Chat project. It sets arguments for training arguments (False for all), model settings, and data processing. The model uses the 'nextchat_seg' type with specified model path, processes multitest datasets using PopeComputeMetrics, and applies padding and collation to the input data with specific parameters.",
+        "type": "summary"
+    },
+    "58": {
+        "file_id": 8,
+        "content": "_base_ = ['_base_/dataset/DEFAULT_TEST_DATASET.py', '_base_/model/nextchat.py', '_base_/train/eval.py']\ntraining_args = dict(\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n    do_train=False,\n    do_eval=False,\n    do_predict=False,\n    do_multi_predict=True,\n    fp16=False,\n    fp16_full_eval=False,\n    bf16=True,\n    bf16_full_eval=True,\n    per_device_eval_batch_size=8,\n)\nmodel_args = dict(\n    # type='nextchat_seg',\n    model_name_or_path=None,\n)\ndata_args = dict(\n    train=None,\n    validation=None,\n    test=None,\n    multitest={k: {'cfg': v, 'compute_metric': dict(type='PopeComputeMetrics')} for k, v in _base_.DEFAULT_TEST_POPE_VARIANT.items() if 'q_a' in k},\n    compute_metric=None,\n    # padding collator kwargs\n    collator_kwargs=dict(\n        padding=True,\n        max_length=1024,\n    ),\n    # generate config\n    gen_kwargs=dict(\n        max_new_tokens=20,\n        num_beams=1,\n    ),\n)",
+        "type": "code",
+        "location": "/config/nextchat_eval_pope.py:1-42"
+    },
+    "59": {
+        "file_id": 8,
+        "content": "This code defines base configurations for training, evaluation, and prediction tasks in the NExT-Chat project. It sets arguments for training arguments (False for all), model settings, and data processing. The model uses the 'nextchat_seg' type with specified model path, processes multitest datasets using PopeComputeMetrics, and applies padding and collation to the input data with specific parameters.",
+        "type": "comment"
+    },
+    "60": {
+        "file_id": 9,
+        "content": "/config/nextchat_eval_reg_cap.py",
+        "type": "filepath"
+    },
+    "61": {
+        "file_id": 9,
+        "content": "This code is configuring a NextChat model for evaluation and prediction. It sets the output directory, disables training but enables evaluation and prediction, uses bf16 (bfloat16) for faster computation, sets batch size, model type, and data sources for evaluation and testing. Data preprocessing includes padding, max length, and generating new tokens.",
+        "type": "summary"
+    },
+    "62": {
+        "file_id": 9,
+        "content": "_base_ = ['_base_/dataset/DEFAULT_TEST_DATASET.py', '_base_/model/nextchat.py', '_base_/train/eval.py']\ntraining_args = dict(\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n    do_train=False,\n    do_eval=False,\n    do_predict=False,\n    do_multi_predict=True,\n    fp16=False,\n    fp16_full_eval=False,\n    bf16=True,\n    bf16_full_eval=True,\n    per_device_eval_batch_size=8,\n)\nmodel_args = dict(\n    type='nextchat_seg',\n    model_name_or_path=None,\n)\ndata_args = dict(\n    train=None,\n    validation=None,\n    test=None,\n    multitest={k: {'cfg': v, 'compute_metric': dict(type='REGCapComputeMetrics')} for k, v in _base_.DEFAULT_TEST_REFCOCOG_VARIANT.items()},\n    compute_metric=None,\n    # padding collator kwargs\n    collator_kwargs=dict(\n        padding=True,\n        max_length=1024,\n    ),\n    # generate config\n    gen_kwargs=dict(\n        max_new_tokens=500,\n        num_beams=1,\n    ),\n)",
+        "type": "code",
+        "location": "/config/nextchat_eval_reg_cap.py:1-42"
+    },
+    "63": {
+        "file_id": 9,
+        "content": "This code is configuring a NextChat model for evaluation and prediction. It sets the output directory, disables training but enables evaluation and prediction, uses bf16 (bfloat16) for faster computation, sets batch size, model type, and data sources for evaluation and testing. Data preprocessing includes padding, max length, and generating new tokens.",
+        "type": "comment"
+    },
+    "64": {
+        "file_id": 10,
+        "content": "/config/nextchat_stage1.py",
+        "type": "filepath"
+    },
+    "65": {
+        "file_id": 10,
+        "content": "This code initializes a model for NextChat Stage 1, setting the base, training arguments, and model arguments. The model will train for 2 epochs and output directory is set to \"./exp/{{fileBasenameNoExtension}}\". The tokenize_kwargs in conv_args truncates input text sequences at 4096 tokens.",
+        "type": "summary"
+    },
+    "66": {
+        "file_id": 10,
+        "content": "_base_ = ['_base_/dataset/nextchat_stage1.py', '_base_/model/nextchat.py', '_base_/train/nextchat_fsdp.py']\ntraining_args = dict(\n    num_train_epochs=2,\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n)\nmodel_args = dict(\n    conv_args=dict(\n        tokenize_kwargs=dict(truncation_size=4096),\n    ),\n    model_name_or_path=None,\n)",
+        "type": "code",
+        "location": "/config/nextchat_stage1.py:1-13"
+    },
+    "67": {
+        "file_id": 10,
+        "content": "This code initializes a model for NextChat Stage 1, setting the base, training arguments, and model arguments. The model will train for 2 epochs and output directory is set to \"./exp/{{fileBasenameNoExtension}}\". The tokenize_kwargs in conv_args truncates input text sequences at 4096 tokens.",
+        "type": "comment"
+    },
+    "68": {
+        "file_id": 11,
+        "content": "/config/nextchat_stage2.py",
+        "type": "filepath"
+    },
+    "69": {
+        "file_id": 11,
+        "content": "This code configures the NextChat model for stage 2, setting base configurations, training arguments, and model-specific arguments. It will train the model for two epochs with a truncation size of 4096 tokens using FairSeq model architecture. The output directory is set as './exp/{{fileBasenameNoExtension}}'.",
+        "type": "summary"
+    },
+    "70": {
+        "file_id": 11,
+        "content": "_base_ = ['_base_/dataset/nextchat_stage2.py', '_base_/model/nextchat.py', '_base_/train/nextchat_fsdp.py']\ntraining_args = dict(\n    num_train_epochs=2,\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n)\nmodel_args = dict(\n    conv_args=dict(\n        tokenize_kwargs=dict(truncation_size=4096),\n    ),\n    model_name_or_path=None,\n)",
+        "type": "code",
+        "location": "/config/nextchat_stage2.py:1-13"
+    },
+    "71": {
+        "file_id": 11,
+        "content": "This code configures the NextChat model for stage 2, setting base configurations, training arguments, and model-specific arguments. It will train the model for two epochs with a truncation size of 4096 tokens using FairSeq model architecture. The output directory is set as './exp/{{fileBasenameNoExtension}}'.",
+        "type": "comment"
+    },
+    "72": {
+        "file_id": 12,
+        "content": "/config/nextchat_stage3.py",
+        "type": "filepath"
+    },
+    "73": {
+        "file_id": 12,
+        "content": "This code sets the base configuration, training arguments and model arguments for a nextchat stage 3 task in a specific codebase. It specifies the dataset, model, and trainings parameters such as number of epochs and output directory path. The conv_args dictionary contains tokenize_kwargs with truncation size set to 4096 and model_name_or_path is set to None.",
+        "type": "summary"
+    },
+    "74": {
+        "file_id": 12,
+        "content": "_base_ = ['_base_/dataset/nextchat_stage3.py', '_base_/model/nextchat.py', '_base_/train/nextchat_non.py']\ntraining_args = dict(\n    num_train_epochs=3,\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n)\nmodel_args = dict(\n    type='nextchat_seg',\n    conv_args=dict(\n        tokenize_kwargs=dict(truncation_size=4096),\n    ),\n    model_name_or_path=None,\n)",
+        "type": "code",
+        "location": "/config/nextchat_stage3.py:1-14"
+    },
+    "75": {
+        "file_id": 12,
+        "content": "This code sets the base configuration, training arguments and model arguments for a nextchat stage 3 task in a specific codebase. It specifies the dataset, model, and trainings parameters such as number of epochs and output directory path. The conv_args dictionary contains tokenize_kwargs with truncation size set to 4096 and model_name_or_path is set to None.",
+        "type": "comment"
+    },
+    "76": {
+        "file_id": 13,
+        "content": "/eval_pope.sh",
+        "type": "filepath"
+    },
+    "77": {
+        "file_id": 13,
+        "content": "This code launches an 8-process accelerate job with CUDA support, finetuning a machine learning model using the \"mllm/pipeline/finetune.py\" script and a specific configuration file (\"config/nextchat_eval_pope.py\"). The model's output directory is set to \"$MODEL_PATH\"/pope/. It performs evaluations with a batch size of 8 per device.",
+        "type": "summary"
+    },
+    "78": {
+        "file_id": 13,
+        "content": "MODEL_PATH=$1\nCUDA_VISIBLE_DEVICES=\"0,1,2,3,4,5,6,7\" accelerate launch --num_processes 8 \\\n        --main_process_port 23787 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_eval_pope.py \\\n        --cfg-options model_args.model_name_or_path=$MODEL_PATH model_args.mm_projector_depth=2 \\\n        --output_dir \"$MODEL_PATH\"/pope/  --per_device_eval_batch_size 8",
+        "type": "code",
+        "location": "/eval_pope.sh:1-8"
+    },
+    "79": {
+        "file_id": 13,
+        "content": "This code launches an 8-process accelerate job with CUDA support, finetuning a machine learning model using the \"mllm/pipeline/finetune.py\" script and a specific configuration file (\"config/nextchat_eval_pope.py\"). The model's output directory is set to \"$MODEL_PATH\"/pope/. It performs evaluations with a batch size of 8 per device.",
+        "type": "comment"
+    },
+    "80": {
+        "file_id": 14,
+        "content": "/eval_rec.sh",
+        "type": "filepath"
+    },
+    "81": {
+        "file_id": 14,
+        "content": "This code uses accelerate to launch two processes for finetuning a multimodal language model (mllm) with a specified configuration file (nextchat_eval_multi_rec.py) and saving the results in a specific output directory ($MODEL_PATH/rec/). The model is specified through the $MODEL_PATH environment variable, and the model depth for multi-modal projection is set to 2.",
+        "type": "summary"
+    },
+    "82": {
+        "file_id": 14,
+        "content": "MODEL_PATH=$1\nCUDA_VISIBLE_DEVICES=\"5,6\" accelerate launch --num_processes 2 \\\n        --main_process_port 23781 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_eval_multi_rec.py \\\n        --cfg-options model_args.model_name_or_path=$MODEL_PATH model_args.mm_projector_depth=2 \\\n        --output_dir \"$MODEL_PATH\"/rec/",
+        "type": "code",
+        "location": "/eval_rec.sh:1-8"
+    },
+    "83": {
+        "file_id": 14,
+        "content": "This code uses accelerate to launch two processes for finetuning a multimodal language model (mllm) with a specified configuration file (nextchat_eval_multi_rec.py) and saving the results in a specific output directory ($MODEL_PATH/rec/). The model is specified through the $MODEL_PATH environment variable, and the model depth for multi-modal projection is set to 2.",
+        "type": "comment"
+    },
+    "84": {
+        "file_id": 15,
+        "content": "/eval_reg_cap.sh",
+        "type": "filepath"
+    },
+    "85": {
+        "file_id": 15,
+        "content": "The code is launching a multi-process accelerated fine-tuning of an ML model (mllm/pipeline/finetune.py) using a specific configuration file (config/nextchat_eval_reg_cap.py). It sets the CUDA devices to use, the model's output directory, and the per-device evaluation batch size to 8. The main process port is set to 23787.",
+        "type": "summary"
+    },
+    "86": {
+        "file_id": 15,
+        "content": "MODEL_PATH=$1\nCUDA_VISIBLE_DEVICES=\"0,1,2,3,4,5,6,7\" accelerate launch --num_processes 1 \\\n        --main_process_port 23787 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_eval_reg_cap.py \\\n        --cfg-options model_args.model_name_or_path=$MODEL_PATH model_args.mm_projector_depth=2 \\\n        --output_dir \"$MODEL_PATH\"/reg_cap/  --per_device_eval_batch_size 8",
+        "type": "code",
+        "location": "/eval_reg_cap.sh:1-8"
+    },
+    "87": {
+        "file_id": 15,
+        "content": "The code is launching a multi-process accelerated fine-tuning of an ML model (mllm/pipeline/finetune.py) using a specific configuration file (config/nextchat_eval_reg_cap.py). It sets the CUDA devices to use, the model's output directory, and the per-device evaluation batch size to 8. The main process port is set to 23787.",
+        "type": "comment"
+    },
+    "88": {
+        "file_id": 16,
+        "content": "/eval_res.sh",
+        "type": "filepath"
+    },
+    "89": {
+        "file_id": 16,
+        "content": "The code is launching the accelerate library with 8 processes and specifying CUDA visible devices. It then executes `mllm/pipeline/finetune.py` using a specific configuration file `config/nextchat_eval_multi_res.py`. The model's output directory is set to \"$MODEL_PATH\"/res/, and the per-device evaluation batch size is 1.",
+        "type": "summary"
+    },
+    "90": {
+        "file_id": 16,
+        "content": "MODEL_PATH=$1\nCUDA_VISIBLE_DEVICES=\"0,1,2,3,4,5,6,7\" accelerate launch --num_processes 8 \\\n        --main_process_port 23781 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_eval_multi_res.py \\\n        --cfg-options model_args.model_name_or_path=$MODEL_PATH model_args.mm_projector_depth=2 \\\n        --output_dir \"$MODEL_PATH\"/res/  --per_device_eval_batch_size 1",
+        "type": "code",
+        "location": "/eval_res.sh:1-8"
+    },
+    "91": {
+        "file_id": 16,
+        "content": "The code is launching the accelerate library with 8 processes and specifying CUDA visible devices. It then executes `mllm/pipeline/finetune.py` using a specific configuration file `config/nextchat_eval_multi_res.py`. The model's output directory is set to \"$MODEL_PATH\"/res/, and the per-device evaluation batch size is 1.",
+        "type": "comment"
+    },
+    "92": {
+        "file_id": 17,
+        "content": "/mllm/config/__init__.py",
+        "type": "filepath"
+    },
+    "93": {
+        "file_id": 17,
+        "content": "The code imports the \"prepare_args\" function from the \"config\" module within the current package. This function likely prepares arguments for further use in the program.",
+        "type": "summary"
+    },
+    "94": {
+        "file_id": 17,
+        "content": "from .config import prepare_args",
+        "type": "code",
+        "location": "/mllm/config/__init__.py:1-1"
+    },
+    "95": {
+        "file_id": 17,
+        "content": "The code imports the \"prepare_args\" function from the \"config\" module within the current package. This function likely prepares arguments for further use in the program.",
+        "type": "comment"
+    },
+    "96": {
+        "file_id": 18,
+        "content": "/mllm/config/config.py",
+        "type": "filepath"
+    },
+    "97": {
+        "file_id": 18,
+        "content": "The code imports libraries, defines a class for argument parsing, initializes training arguments, checks for missing values and config info, sets up logger, prepares training args, and handles existing output directories or checkpoint files.",
+        "type": "summary"
+    },
+    "98": {
+        "file_id": 18,
+        "content": "import os\nimport sys\nimport logging\nimport argparse\nfrom dataclasses import dataclass, field\nfrom typing import List, Tuple\nfrom argparse import SUPPRESS\nimport datasets\nimport transformers\nfrom mmengine.config import Config, DictAction\nfrom transformers import HfArgumentParser, set_seed, add_start_docstrings\nfrom transformers import Seq2SeqTrainingArguments as HFSeq2SeqTrainingArguments\nfrom transformers.trainer_utils import get_last_checkpoint, is_main_process\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\nlogging.basicConfig(\n    format=\"%(asctime)s - %(levelname)s - %(name)s - %(message)s\",\n    datefmt=\"%m/%d/%Y %H:%M:%S\",\n    handlers=[logging.StreamHandler(sys.stdout), ],\n)\n@dataclass\n@add_start_docstrings(HFSeq2SeqTrainingArguments.__doc__)\nclass Seq2SeqTrainingArguments(HFSeq2SeqTrainingArguments):\n    do_multi_predict: bool = field(default=False, metadata={\"help\": \"Whether to run predictions on the multi-test set.\"})\ndef prepare_args(args=None):\n    parser = argparse.ArgumentParser()",
+        "type": "code",
+        "location": "/mllm/config/config.py:1-32"
+    },
+    "99": {
+        "file_id": 18,
+        "content": "The code imports necessary libraries and classes for configuration, argument parsing, logging, and handling of training arguments. It defines a new class Seq2SeqTrainingArguments that inherits from HFSeq2SeqTrainingArguments and adds an extra field 'do_multi_predict'. The prepare_args function initializes an ArgumentParser to handle command-line arguments for the program.",
+        "type": "comment"
+    }
+}

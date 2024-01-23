@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
+
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/DATA.md</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/README.md</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/_base_/model/nextchat.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/_base_/train/eval.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/_base_/train/nextchat_fsdp.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/_base_/train/nextchat_non.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/nextchat_eval_multi_rec.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/nextchat_eval_multi_res.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/nextchat_eval_pope.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/nextchat_eval_reg_cap.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/nextchat_stage1.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/nextchat_stage2.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/config/nextchat_stage3.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/eval_pope.sh</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/eval_rec.sh</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/eval_reg_cap.sh</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/eval_res.sh</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/config/__init__.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/config/config.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/conversation/__init__.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/conversation/base_conversation.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/__init__.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/builder.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/process_function/__init__.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/process_function/box_process_function.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/process_function/chat_process_function.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/root.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/single_image_convsation.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/single_image_interactive.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/utils/__init__.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/utils/compute_metrics.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/utils/concatenate_dataset.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/utils/flickr30k_entities_utils.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/utils/io.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/utils/mixin.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/dataset/utils/transform.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/demo/bash_demo.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/demo/demo_util.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/demo/web_demo.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/engine/__init__.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/engine/base_engine.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/engine/builder.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/engine/nextchat.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/models/__init__.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/models/builder/__init__.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/models/builder/build_nextchat.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/models/builder/builder.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/models/nextchat/__init__.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/models/nextchat/nextchat_base.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/models/nextchat/nextchat_seg.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/models/sam/modeling_sam.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/models/sam/sam_loss.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/models/sam/transforms.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/pipeline/finetune.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/pipeline/finetune_mem.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/utils/__init__.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/utils/box_ops.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/mllm/utils/common.py</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/requirements.txt</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/run_stage1.sh</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/run_stage2.sh</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+<url>
+  <loc>https://james4ever0.github.io/NExT-Chat?q=/run_stage3.sh</loc>
+  <lastmod>2023-12-28T09:21:02+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+
+</urlset>

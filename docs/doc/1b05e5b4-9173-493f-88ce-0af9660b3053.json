@@ -1,0 +1,15 @@
+{
+    "summary": "The function read_img_general() reads images from given paths, handling S3 fetching and exceptions. It initializes Ceph client if necessary, logs time taken.",
+    "details": [
+        {
+            "comment": "Function read_img_general() reads an image from a given path, either by opening the file or fetching it from S3 using ceph client if the path contains \"s3://\". The function handles potential exceptions and provides fallback options for reading images.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/dataset/utils/io.py\":0-39",
+            "content": "import sys\nimport time\nimport logging\nimport cv2\nimport numpy as np\nfrom PIL import Image\nfrom PIL import ImageFile\nImageFile.LOAD_TRUNCATED_IMAGES = True\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\nlogging.basicConfig(\n    format=\"%(asctime)s - %(levelname)s - %(name)s - %(message)s\",\n    datefmt=\"%m/%d/%Y %H:%M:%S\",\n    handlers=[logging.StreamHandler(sys.stdout), ],\n)\ndef read_img_general(img_path):\n    if \"s3://\" in img_path:\n        cv_img = read_img_ceph(img_path)\n        # noinspection PyUnresolvedReferences\n        return Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))\n    else:\n        try:\n            return Image.open(img_path).convert('RGB')\n        except Exception as E:\n            print(E)\n            return Image.open(\"tmp.jpg\").convert('RGB')\nclient = None\ndef read_img_ceph(img_path):\n    init_ceph_client_if_needed()\n    img_bytes = client.get(img_path)\n    assert img_bytes is not None, f\"Please check image at {img_path}\"\n    img_mem_view = memoryview(img_bytes)\n    img_array = np.frombuffer(img_mem_view, np.uint8)"
+        },
+        {
+            "comment": "Initializes Ceph client if it's null and logs time taken.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/dataset/utils/io.py\":40-53",
+            "content": "    # noinspection PyUnresolvedReferences\n    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)\n    return img\ndef init_ceph_client_if_needed():\n    global client\n    if client is None:\n        logger.info(f\"initializing ceph client ...\")\n        st = time.time()\n        from petrel_client.client import Client  # noqa\n        client = Client(enable_mc=True)\n        ed = time.time()\n        logger.info(f\"initialize client cost {ed - st:.2f} s\")"
+        }
+    ]
+}

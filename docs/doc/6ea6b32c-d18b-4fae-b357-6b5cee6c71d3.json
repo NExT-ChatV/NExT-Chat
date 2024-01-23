@@ -1,0 +1,10 @@
+{
+    "summary": "This code configures the NextChat model for stage 2, setting base configurations, training arguments, and model-specific arguments. It will train the model for two epochs with a truncation size of 4096 tokens using FairSeq model architecture. The output directory is set as './exp/{{fileBasenameNoExtension}}'.",
+    "details": [
+        {
+            "comment": "This code configures the NextChat model for stage 2, setting base configurations, training arguments, and model-specific arguments. It will train the model for two epochs with a truncation size of 4096 tokens using FairSeq model architecture. The output directory is set as './exp/{{fileBasenameNoExtension}}'.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/config/nextchat_stage2.py\":0-12",
+            "content": "_base_ = ['_base_/dataset/nextchat_stage2.py', '_base_/model/nextchat.py', '_base_/train/nextchat_fsdp.py']\ntraining_args = dict(\n    num_train_epochs=2,\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n)\nmodel_args = dict(\n    conv_args=dict(\n        tokenize_kwargs=dict(truncation_size=4096),\n    ),\n    model_name_or_path=None,\n)"
+        }
+    ]
+}

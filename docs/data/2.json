@@ -1,0 +1,545 @@
+{
+    "200": {
+        "file_id": 25,
+        "content": "/mllm/dataset/process_function/chat_process_function.py",
+        "type": "filepath"
+    },
+    "201": {
+        "file_id": 25,
+        "content": "This code processes chat conversations and images for AI models by tokenizing, generating input_ids, preprocessing images, and creating attention masks and labels. It inherits from BaseConvProcessFunc and utilizes Conversation and LlamaTokenizer.",
+        "type": "summary"
+    },
+    "202": {
+        "file_id": 25,
+        "content": "import sys\nimport copy\nimport warnings\nimport logging\nfrom typing import Dict, Any, List\nimport PIL.Image\nimport torch\nfrom PIL import Image\nfrom transformers import LlamaTokenizer\nfrom ..root import (\n    FUNCTIONS,\n    IMAGE_PLACEHOLDER,\n    BaseImageProcessFunc,\n    BaseConvProcessFunc,\n    BaseTextProcessFunc,\n)\nfrom ...conversation import SeparatorStyle, Conversation\nIGNORE_INDEX = -100\nDEFAULT_IMAGE_TOKEN = IMAGE_PLACEHOLDER\nDEFAULT_IMAGE_PATCH_TOKEN = \"<im_patch>\"\nDEFAULT_IM_START_TOKEN = \"<im_start>\"\nDEFAULT_IM_END_TOKEN = \"<im_end>\"\nDEFAULT_AT_TOKEN = \"<at>\"\nDEFAULT_BOXES_TOKEN = \"<boxes>\"\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\nlogging.basicConfig(\n    format=\"%(asctime)s - %(levelname)s - %(name)s - %(message)s\",\n    datefmt=\"%m/%d/%Y %H:%M:%S\",\n    handlers=[logging.StreamHandler(sys.stdout), ],\n)\n@FUNCTIONS.register_module()\nclass ChatConvProcess(BaseConvProcessFunc):\n    def __call__(self, raw_conv: List[Dict[str, Any]], preprocessor: Dict[str, Any], conv_template: Conversation) -> List[Dict[str, Any]]:",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/chat_process_function.py:1-40"
+    },
+    "203": {
+        "file_id": 25,
+        "content": "This code is a Python class for processing conversations, specifically for a chat-based task. It inherits from the BaseConvProcessFunc class and contains a call method that takes in a list of raw conversation dictionaries, a preprocessor dictionary, and a Conversation object as input. The output is a processed list of conversation dictionaries. The code also includes various constants and logging setup.",
+        "type": "comment"
+    },
+    "204": {
+        "file_id": 25,
+        "content": "        conv_processor_cfg = preprocessor['conv']\n        image_token_len = conv_processor_cfg['image_token_len']\n        sep_image_conv_front = conv_processor_cfg.get('sep_image_conv_front', False)\n        use_im_start_end = conv_processor_cfg.get('use_im_start_end', False)\n        # assert DEFAULT_IMAGE_PATCH_TOKEN in preprocessor['text'].get_vocab()\n        # if use_im_start_end:\n        #     assert DEFAULT_IM_START_TOKEN in preprocessor['text'].get_vocab()\n        #     assert DEFAULT_IM_END_TOKEN in preprocessor['text'].get_vocab()\n        if sep_image_conv_front:\n            raw_conv[0]['value'] = raw_conv[0]['value'].replace(DEFAULT_IMAGE_TOKEN, '').strip()\n            raw_conv[0]['value'] = DEFAULT_IMAGE_TOKEN + conv_template.sep + conv_template.roles[0] + \": \" + raw_conv[0]['value']\n        for sentence in raw_conv:\n            replace_token = DEFAULT_IMAGE_PATCH_TOKEN * image_token_len\n            if use_im_start_end:\n                replace_token = DEFAULT_IM_START_TOKEN + replace_token + DEFAULT_IM_END_TOKEN",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/chat_process_function.py:41-57"
+    },
+    "205": {
+        "file_id": 25,
+        "content": "The code retrieves configuration parameters from the preprocessor dictionary, performs assertions on available tokens, and adjusts the raw conversation data if a specific separation token is used for images. The code handles image-related tokens, replacing them with appropriate formats based on the provided configuration.",
+        "type": "comment"
+    },
+    "206": {
+        "file_id": 25,
+        "content": "            sentence[\"value\"] = sentence[\"value\"].replace(DEFAULT_IMAGE_TOKEN, replace_token)\n        return raw_conv\n@FUNCTIONS.register_module()\nclass ChatTextProcess(BaseTextProcessFunc):\n    def __call__(self, conv: Conversation, preprocessor: Dict[str, Any], mode: str, **tokenize_kwargs) -> Dict[str, Any]:\n        tokenizer = preprocessor['text']\n        assert isinstance(tokenizer, LlamaTokenizer), \"only work for LlamaTokenizer\"\n        _truncation_size = tokenize_kwargs.pop('truncation_size', None)\n        _kwargs = {'return_tensors': 'pt'}\n        _kwargs.update(tokenize_kwargs)\n        if conv.sep_style == SeparatorStyle.ADD_COLON_TWO:\n            if mode in ['train']:\n                ret = self.tk_conv_colon_two_train(conv, tokenizer, **_kwargs)\n            else:\n                ret = self.tk_conv_colon_two_eval(conv, tokenizer, **_kwargs)\n        else:\n            raise ValueError(f\"unrecognized conv_style: {conv.sep_style}.\\n the conv is {conv}\")\n        if _truncation_size is None:\n            return ret",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/chat_process_function.py:58-83"
+    },
+    "207": {
+        "file_id": 25,
+        "content": "This code registers a ChatTextProcess function, which processes conversation data. The function takes a Conversation object and LlamaTokenizer as input parameters. It can handle different separator styles and returns tokenized conversation data. If truncation size is not set, the function returns the processed conversation.",
+        "type": "comment"
+    },
+    "208": {
+        "file_id": 25,
+        "content": "        if len(ret['input_ids']) <= _truncation_size:\n            return ret\n        origin_len = len(ret['input_ids'])\n        ids_to_remove_num = origin_len - _truncation_size\n        # truncation. should carefully not truncate <img_token>\n        ids_should_not_remove = list(map(\n            tokenizer.convert_tokens_to_ids,\n            (DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_BOXES_TOKEN, DEFAULT_AT_TOKEN)\n        ))\n        back_no_image = all(ids not in ids_should_not_remove for ids in ret['input_ids'][_truncation_size:])\n        if back_no_image:\n            tgt_ids = list(range(_truncation_size))\n        else:\n            ids_to_remove = set()\n            for idx in range(origin_len - 1, -1, -1):\n                if ret['input_ids'][idx] not in ids_should_not_remove:\n                    ids_to_remove.add(idx)\n                    if len(ids_to_remove) >= ids_to_remove_num:\n                        break\n            tgt_ids = [_ for _ in range(origin_len) if _ not in ids_to_remove]",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/chat_process_function.py:84-104"
+    },
+    "209": {
+        "file_id": 25,
+        "content": "The code checks if the length of input_ids in 'ret' is less than or equal to _truncation_size. If it is, it returns 'ret'. Otherwise, it determines which ids to remove to truncate the text while ensuring important image tokens are not removed. It then creates a list of target indices (tgt_ids) by either including all indices if there are no images in the remaining text or by iterating backwards from the end and excluding non-image token ids until reaching the required number of ids to remove.",
+        "type": "comment"
+    },
+    "210": {
+        "file_id": 25,
+        "content": "        logger.warning(f\"truncate sample size from {origin_len} to {len(tgt_ids)}.\")\n        assert len(tgt_ids) == _truncation_size, f\"{len(tgt_ids)}, {_truncation_size}, {ret['input_ids'].tolist()}\"\n        truncated_ret = {k: v[tgt_ids] for k, v in ret.items()}\n        return truncated_ret\n    # noinspection PyMethodMayBeStatic\n    def tk_conv_colon_two_train(self, conv, tokenizer, **kwargs):\n        conversation = conv.get_prompt()\n        input_ids = tokenizer([conversation, ], **kwargs).input_ids[0]\n        target = copy.deepcopy(input_ids)\n        assert conv.sep_style == SeparatorStyle.ADD_COLON_TWO\n        # Mask targets\n        sep = conv.sep + conv.roles[1] + \": \"\n        total_len = int(target.ne(tokenizer.pad_token_id).sum())\n        rounds = conversation.split(conv.sep2)\n        cur_len = 1\n        target[:cur_len] = IGNORE_INDEX\n        for i, rou in enumerate(rounds):\n            if rou == \"\":\n                break\n            parts = rou.split(sep)\n            if len(parts) != 2:\n                break",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/chat_process_function.py:105-127"
+    },
+    "211": {
+        "file_id": 25,
+        "content": "This function truncates a sample and returns the truncated input_ids. It first logs a warning if the sample size is larger than expected, then asserts that the tgt_ids length matches the desired truncation size. Next, it creates a new dictionary, truncated_ret, containing only keys from ret, and values are the corresponding items in the original ret, but limited to the range of tgt_ids. Finally, it returns the truncated_ret. The function tk_conv_colon_two_train takes a conversation, tokenizer and other arguments as input and returns masked targets for a specific conversation style (add colon two). It starts by asserting that the conv's sep_style is add colon two. Then it masks the target tokens using the separator, ensuring that all non-pad tokens are marked with IGNORE_INDEX, except for the first one which is left unchanged. The function loops through the conversation rounds (split by sep2) and if a round contains both speaker and role information (split by conv.sep), it continues processing; otherwise, it breaks out of the loop. It then creates target tokens using the speaker and role information in each round.",
+        "type": "comment"
+    },
+    "212": {
+        "file_id": 25,
+        "content": "            parts[0] += sep\n            round_len = len(tokenizer(rou).input_ids)\n            instruction_len = len(tokenizer(parts[0]).input_ids) - 2  # <s> <space>\n            target[cur_len: cur_len + instruction_len] = IGNORE_INDEX\n            cur_len += round_len\n        target[cur_len:] = IGNORE_INDEX\n        # if cur_len < tokenizer.model_max_length:\n        #     if cur_len != total_len:\n        #         target[:] = IGNORE_INDEX\n        #         warnings.warn(f\"WARNING: tokenization mismatch: {cur_len} vs. {total_len}. (ignored):\\n{conversation}\")\n        return dict(\n            input_ids=input_ids,\n            attention_mask=input_ids.ne(tokenizer.pad_token_id),\n            labels=target,\n        )\n    # noinspection PyMethodMayBeStatic\n    def tk_conv_colon_two_eval(self, conv, tokenizer, **kwargs):\n        assert len(conv.messages) >= 2\n        # target = conv.messages[-1][-1]\n        target = conv.get_prompt()\n        conv.messages[-1][-1] = \"\"\n        conversation = conv.get_prompt()\n        input_ids = tokenizer([conversation, ], **kwargs).input_ids[0]",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/chat_process_function.py:128-152"
+    },
+    "213": {
+        "file_id": 25,
+        "content": "This code is processing a chat conversation by tokenizing the messages and creating input_ids for a model. It first joins all messages with a separator, calculates the lengths of instruction and round tokens, ignores extra tokens if exceeding maximum length, and creates dictionaries containing input_ids, attention_mask, and labels for further processing.",
+        "type": "comment"
+    },
+    "214": {
+        "file_id": 25,
+        "content": "        target = tokenizer([target, ], add_special_tokens=False, **kwargs).input_ids[0]\n        target[target == tokenizer.pad_token_id] = IGNORE_INDEX\n        return dict(\n            input_ids=input_ids,\n            attention_mask=input_ids.ne(tokenizer.pad_token_id),\n            labels=target,\n        )\n@FUNCTIONS.register_module()\nclass ChatImageProcessor(BaseImageProcessFunc):\n    def __call__(self, image: Image.Image, preprocessor: Dict[str, Any]) -> Dict[str, Any]:\n        image_processor = preprocessor['image']\n        if isinstance(image, (list, tuple)):\n            image = image_processor.preprocess(image, return_tensors='pt')['pixel_values']\n            assert False, 'NExTChat not support MultiImage'\n        elif isinstance(image, PIL.Image.Image):\n            image = image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0]\n        else:\n            if hasattr(image_processor, 'crop_size'):\n                crop_size = image_processor.crop_size\n                height, width = crop_size['height'], crop_size['width']",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/chat_process_function.py:154-176"
+    },
+    "215": {
+        "file_id": 25,
+        "content": "This code processes an image by using a predefined processor to perform necessary preprocessing before feeding it into the model. It ensures the image is of correct format and size, and converts it into tensor format for the model's input. The function returns the processed image along with its attention mask and target labels if applicable.",
+        "type": "comment"
+    },
+    "216": {
+        "file_id": 25,
+        "content": "            else:\n                raise ValueError(\"got empty image. and don't know how to pad\")\n            image = torch.zeros(3, height, width)\n        return {'image': image}",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/chat_process_function.py:177-180"
+    },
+    "217": {
+        "file_id": 25,
+        "content": "This code raises a ValueError if the input image is empty, and then creates a zero-filled image of size 3xheightxwidth as a placeholder for padding. The function returns a dictionary with the placeholder image under the key 'image'.",
+        "type": "comment"
+    },
+    "218": {
+        "file_id": 26,
+        "content": "/mllm/dataset/root.py",
+        "type": "filepath"
+    },
+    "219": {
+        "file_id": 26,
+        "content": "This code defines classes and functions for processing conversation data, including placeholders for various types of data and abstract base classes for processing functions. The code includes three main types of processor functions: BaseConvProcessFunc, BaseTargetProcessFunc, and BaseTextProcessFunc.",
+        "type": "summary"
+    },
+    "220": {
+        "file_id": 26,
+        "content": "from typing import Dict, Any, List, Tuple\nfrom PIL import Image\nfrom mmengine import DATASETS, TRANSFORMS, METRICS, FUNCTIONS, Registry\nfrom ..conversation import Conversation\nIMAGE_PLACEHOLDER = '<image>'\nAT_PLACEHOLDER = '<at>'\nBOXES_PLACEHOLDER = '<at> <boxes>'\nEXPR_PLACEHOLDER = '<expr>'\nOBJS_PLACEHOLDER = '<objs>'\nQUESTION_PLACEHOLDER = '<question>'\nPOINTS_PLACEHOLDER = '<points>'\n# processor\nBOXES_PROCESSOR = Registry('Processor for Boxes')\n# only for static type checking\nclass BaseConvProcessFunc:\n    def __call__(\n            self,\n            raw_conv: List[Dict[str, Any]],\n            preprocessor: Dict[str, Any],\n            conv_template: Conversation,\n    ) -> List[Dict[str, Any]]:\n        raise NotImplementedError\nclass BaseTargetProcessFunc:\n    def __call__(\n            self,\n            raw_conv: List[Dict[str, Any]],\n            target: Dict[str, Any],\n            preprocessor: Dict[str, Any],\n    ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:\n        raise NotImplementedError\nclass BaseTextProcessFunc:",
+        "type": "code",
+        "location": "/mllm/dataset/root.py:1-40"
+    },
+    "221": {
+        "file_id": 26,
+        "content": "This code defines classes and functions for processing conversation data in a chat dataset. It includes placeholders for various types of data, such as images, expressions, objects, and questions. There are three main types of processor functions defined: BaseConvProcessFunc, BaseTargetProcessFunc, and BaseTextProcessFunc. These functions handle different types of conversational data and return processed data after applying preprocessors or target processors to raw conversation data.",
+        "type": "comment"
+    },
+    "222": {
+        "file_id": 26,
+        "content": "    def __call__(\n            self,\n            conv: Conversation,\n            preprocessor: Dict[str, Any],\n            mode: str,\n            **tokenize_kwargs,\n    ) -> Dict[str, Any]:\n        raise NotImplementedError\nclass BaseImageProcessFunc:\n    def __call__(\n            self,\n            image: Image.Image,\n            preprocessor: Dict[str, Any],\n    ) -> Dict[str, Any]:\n        raise NotImplementedError\n__all__ = [\n    'IMAGE_PLACEHOLDER', 'BOXES_PLACEHOLDER', 'EXPR_PLACEHOLDER', 'OBJS_PLACEHOLDER', 'QUESTION_PLACEHOLDER', 'POINTS_PLACEHOLDER', 'AT_PLACEHOLDER',\n    'FUNCTIONS',\n    'DATASETS',\n    'TRANSFORMS',\n    'METRICS',\n    'BOXES_PROCESSOR',\n    'BaseConvProcessFunc', 'BaseTargetProcessFunc', 'BaseTextProcessFunc', 'BaseImageProcessFunc',\n]",
+        "type": "code",
+        "location": "/mllm/dataset/root.py:41-68"
+    },
+    "223": {
+        "file_id": 26,
+        "content": "This code defines abstract base classes for conversation and image processing functions, along with various placeholders and related modules. The `__call__` method in each class serves as a placeholder for subclasses to implement specific processing logic. The `FUNCTIONS`, `DATASETS`, `TRANSFORMS`, and `METRICS` variables likely contain references to other classes or modules.",
+        "type": "comment"
+    },
+    "224": {
+        "file_id": 27,
+        "content": "/mllm/dataset/single_image_convsation.py",
+        "type": "filepath"
+    },
+    "225": {
+        "file_id": 27,
+        "content": "The `SingleImageConvDatasetMixin` processes conversation datasets, initializes attributes, extends classes, retrieves items, applies transforms, checks image existence, and utilizes persistent workers. The WRAPPER_DATASET dictionary maps dataset names to their respective classes for processing single-image conversation tasks in the NExT-Chat project.",
+        "type": "summary"
+    },
+    "226": {
+        "file_id": 27,
+        "content": "import warnings\nfrom functools import partial\nfrom typing import Dict, Any, Callable, List, Optional, Tuple, Type\nimport torch\nfrom PIL import Image\nfrom torch.utils.data import Dataset\nfrom transformers import TrainingArguments\nfrom .root import IMAGE_PLACEHOLDER, BOXES_PLACEHOLDER\nfrom ..conversation import Conversation, get_conv_template\nfrom ..utils import post_process_generate_ids\nclass SingleImageConvDatasetMixin:\n    def __init__(\n            self,\n            *args,\n            preprocessor: Dict[str, Any],\n            process_func: Dict[str, Any],\n            conv_template: Callable[[], Conversation] = partial(get_conv_template, name='vicuna_v1.1'),\n            mode='train',\n            tokenize_kwargs: dict = None,\n            training_args: TrainingArguments = None,\n            transforms: Optional[Callable] = None,\n            **kwargs,\n    ):\n        super().__init__(*args, **kwargs)\n        assert mode in ['train', 'validation', 'test']\n        self.preprocessor = preprocessor\n        self.process_func = process_func",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:1-33"
+    },
+    "227": {
+        "file_id": 27,
+        "content": "This code defines a class `SingleImageConvDatasetMixin` for a dataset that involves single images and conversations. It includes an initializer with arguments like preprocessor, process_func, conv_template, mode, tokenize_kwargs, training_args, and transforms. The assert statement ensures the mode is either 'train', 'validation', or 'test'. This class extends another class (not shown) and calls its initializer using `super().__init__()`.",
+        "type": "comment"
+    },
+    "228": {
+        "file_id": 27,
+        "content": "        self.conv_template = conv_template\n        self.mode = mode\n        self.tokenize_kwargs = tokenize_kwargs if tokenize_kwargs is not None else {}\n        self.training_args = training_args\n        self.transforms = transforms\n    def __getitem__(self, index, debug_mode=False, return_conv=False) -> Dict[str, Any]:\n        # getitem\n        item = self.get_raw_item(index)\n        image: Image.Image = item.get('image', None)\n        target: Dict[str, Any] = item.get('target', None)\n        raw_conv: List[Dict[str, Any]] = item['conversations']\n        # transform\n        assert isinstance(image, list) == isinstance(target, list)\n        multimage_mode = isinstance(image, list)\n        if isinstance(image, list):\n            # TODO: validate raw item\n            transformed_image, transformed_target = [], []\n            for img, tgt in zip(image, target):\n                if self.transforms is not None and image is not None:\n                    img, tgt = self.transforms(img, tgt)\n                if tgt is not None:",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:34-56"
+    },
+    "229": {
+        "file_id": 27,
+        "content": "This code represents a class that initializes attributes, such as conv_template, mode, tokenize_kwargs, and training_args. The __getitem__ method retrieves the raw item from an index and applies transforms to the image and target using the defined transforms attribute. It also checks if the item is a multimage and handles it accordingly.",
+        "type": "comment"
+    },
+    "230": {
+        "file_id": 27,
+        "content": "                    tgt['width'], tgt['height'] = img.width, img.height\n                transformed_image.append(img)\n                transformed_target.append(tgt)\n            image, target = transformed_image, transformed_target\n        else:\n            self.validate_raw_item(item)  # only validate for single image.\n            if self.transforms is not None and image is not None:\n                image, target = self.transforms(image, target)\n            has_image = 'image' in item and bool(item['image'])\n            has_target = 'target' in item and bool(item['target']) and any(bool(elem) for elem in item['target'].values())\n            if has_target and has_image:\n                target['width'], target['height'] = image.width, image.height\n        # preprocess\n        raw_conv = self.process_conv(raw_conv)\n        raw_conv, image = self.process_conv_multimage(raw_conv, image)\n        raw_conv, tar_boxes = self.process_target(raw_conv, target, multimage_mode=multimage_mode)\n        conv = self.build_conv(raw_conv)",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:57-74"
+    },
+    "231": {
+        "file_id": 27,
+        "content": "Code snippet initializes 'width' and 'height' attributes in the target dictionary, appends images to 'transformed_image', targets to 'transformed_target', checks for image and target existence in item, applies transforms if provided, sets width and height of target based on image dimensions, processes conv and image using multimage mode, and finally builds the conversation object.",
+        "type": "comment"
+    },
+    "232": {
+        "file_id": 27,
+        "content": "        if return_conv:\n            # noinspection PyTypeChecker\n            return conv\n        text_dict = self.process_text(conv)\n        image_dict = self.process_image(image)\n        # return\n        ret_dict = {}\n        ret_dict.update(text_dict)\n        ret_dict.update(image_dict)\n        ret_dict[\"loc_inputs\"] = tar_boxes[\"all_boxes\"]\n        ret_dict[\"loc_targets\"] = tar_boxes[\"gpt_boxes\"]\n        self._print_sample(ret_dict, raw_conv, conv)\n        if debug_mode:\n            return {'ret': ret_dict, 'raw_conv': raw_conv, 'conv': conv, 'image': image}\n        return ret_dict\n    def __len__(self):\n        raise NotImplementedError\n    # noinspection PyMethodMayBeStatic\n    def process_conv_multimage(self, raw_conv, image):\n        # re-sort multi image\n        if image is None:\n            return raw_conv, image\n        if not isinstance(image, (list, tuple)):\n            return raw_conv, image\n        image_seqs = []\n        for conv in raw_conv:\n            image_seqs.extend(conv['image_seq'] if 'image_seq' in conv else [])",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:75-104"
+    },
+    "233": {
+        "file_id": 27,
+        "content": "This code is from the single_image_conversation.py file in the NExT-Chat project. The function processes a conversation and related image, updating dictionaries for text and image data and adding location input/targets. If debug mode is enabled, it returns multiple dictionaries containing the processed data; otherwise, it only returns the updated ret_dict. If no image or non-list/tuple image is given, it simply returns raw conversation and image as they are.",
+        "type": "comment"
+    },
+    "234": {
+        "file_id": 27,
+        "content": "        images = []\n        for idx in image_seqs:\n            images.append(image[idx])\n        return raw_conv, images\n    def get_raw_item(self, index) -> Dict[str, Any]:\n        \"\"\"\n        return item format like this.\n        item = {\n            'image': # PIL.Image.Image,\n            'target': {\n                # xmin, ymin, xmax, ymax\n                'boxes': [\n                    [10, 10, 256, 265],  # dog1\n                    [24, 18, 378, 768],  # dog2\n                    [100, 310, 670, 653],  # man\n                    [278, 320, 809, 673],  # rope\n                ],\n            }\n            \"conversations\": [\n                {\n                    'from': 'human',\n                    'value': 'What is the relation between the two dogs <boxes> and the man <boxes> in the image <image> ?',\n                    'boxes_seq': [[0, 1], [2], ],\n                },\n                {\n                    'from': 'gpt',\n                    'value': 'a rope <boxes> is connecting the left dog <boxes> with the man <boxes>. '",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:105-133"
+    },
+    "235": {
+        "file_id": 27,
+        "content": "The code is defining a function to return 'raw_conv' and images from the provided 'image_seqs'. It also has another function called 'get_raw_item' which returns an item in a specific format. The item includes PIL Image, target boxes coordinates, and conversations with their respective types (human or gpt) and associated values. The boxes are represented by their coordinates and the items are indexed.",
+        "type": "comment"
+    },
+    "236": {
+        "file_id": 27,
+        "content": "                             'So the man <boxes> is walking the dog <boxes>.'\n                            'And the man <boxes> has no relationship with the right dog <boxes>',\n                    'boxes_seq': [[3], [0], [2], [2], [0], [2], [1]],\n                }\n            ]\n        }\n        # placeholder: <image> <boxes>\n        \"\"\"\n        raise NotImplementedError\n    # noinspection PyMethodMayBeStatic\n    def validate_raw_item(self, item):\n        has_image = 'image' in item and bool(item['image'])\n        has_target = 'target' in item and bool(item['target']) and any(bool(elem) for elem in item['target'].values())\n        has_target_boxes = 'boxes' in item['target'] if has_target else False\n        raw_conv: List[Dict[str, Any]] = item['conversations']\n        # check image\n        human_input_has_image_placeholder = any(\n            sentence['from'] == 'human' and IMAGE_PLACEHOLDER in sentence['value'] for sentence in raw_conv\n        )\n        if human_input_has_image_placeholder:\n            assert has_image",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:134-156"
+    },
+    "237": {
+        "file_id": 27,
+        "content": "This code defines a class method for validating raw items in the dataset. It checks if each item contains an 'image' and 'target' field, and ensures that the 'target' field has non-empty values. If the target field exists, it also checks if it contains a 'boxes' key with non-empty values. Additionally, the code verifies if the human input includes an image placeholder in any sentence within the conversation.",
+        "type": "comment"
+    },
+    "238": {
+        "file_id": 27,
+        "content": "        if has_image and (not human_input_has_image_placeholder):\n            warnings.warn(f'item has image but the question has no image placeholder.\\n{item}')\n        gpt_input_has_image_placeholder = any(\n            sentence['from'] == 'gpt' and IMAGE_PLACEHOLDER in sentence['value'] for sentence in raw_conv\n        )\n        assert not gpt_input_has_image_placeholder\n        # check target\n        has_boxes_placeholder = any(\n            BOXES_PLACEHOLDER in sentence['value'] for sentence in raw_conv\n        )\n        if has_boxes_placeholder:\n            assert has_target_boxes\n        # not check box placeholder num this will be checked in format process\n    def build_conv(self, source: List[Dict[str, Any]]) -> Conversation:\n        conv = self.conv_template()\n        role_map = {\"human\": conv.roles[0], \"gpt\": conv.roles[1]}\n        assert len(source) > 0\n        assert source[0]['from'] == 'human'\n        for sentence in source:\n            role = role_map[sentence['from']]\n            conv.append_message(role, sentence['value'])",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:157-179"
+    },
+    "239": {
+        "file_id": 27,
+        "content": "The code checks if the image placeholder is present in the human input but not in the GPT response, and if there are any boxes placeholder in the conversation. It asserts that GPT should not have an image placeholder and if boxes placeholder exists, it asserts that there must be target boxes. The function then appends messages to the conversation based on their roles.",
+        "type": "comment"
+    },
+    "240": {
+        "file_id": 27,
+        "content": "        return conv\n    def process_conv(self, raw_conv: List[Dict[str, Any]]) -> List[Dict[str, Any]]:\n        \"\"\"\n        some utils preprocess for raw_conv.\n            e.g. replace <image> placeholder to sequence <im_start> <im_patch>*256 <im_end>\n        \"\"\"\n        return self.process_func['conv'](raw_conv, self.preprocessor, self.conv_template)\n    def process_target(self, raw_conv: List[Dict[str, Any]], target: Dict[str, Any], multimage_mode=False) -> Tuple[\n        List[Dict[str, Any]], Dict[str, Any]]:\n        \"\"\"\n        convert target placeholder to actual information in raw_conv.\n            e.g. normalize bounding boxes; convert bounding boxes format; replace <boxes> placeholder\n        \"\"\"\n        return self.process_func['target'](raw_conv, target, self.preprocessor, multimage_mode=multimage_mode)\n    def process_text(self, conv: Conversation) -> Dict[str, Any]:\n        \"\"\"\n        convert Conversation object to torch.Tensor, e.g. input_ids, labels, attention_mask, etc.\n            self.tokenize_kwargs control something like padding/truncation behavior.",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:180-200"
+    },
+    "241": {
+        "file_id": 27,
+        "content": "The code defines three functions: `process_conv`, `process_target`, and `process_text`. These functions preprocess conversation data, replace image placeholders with sequences, and convert Conversation objects to Tensor format for machine learning models. The code is part of a larger project that utilizes Conversational AI techniques.",
+        "type": "comment"
+    },
+    "242": {
+        "file_id": 27,
+        "content": "        \"\"\"\n        return self.process_func['text'](conv, self.preprocessor, self.mode, **self.tokenize_kwargs)\n    def process_image(self, image: Image.Image) -> Dict[str, Any]:\n        \"\"\"\n        convert Image.Image object to torch.Tensor\n        \"\"\"\n        return self.process_func['image'](image, self.preprocessor)\n    def _print_sample(self, ret_dict, raw_conv, conv):\n        if not hasattr(self, '_printed_sample'):\n            self._printed_sample = True\n            post_processed_labels = post_process_generate_ids(self.preprocessor['text'], ret_dict['labels'])\n            print(f\"=================== {self.mode} sample ===================\", flush=True)\n            print(f\"        input_ids: {self.preprocessor['text'].convert_ids_to_tokens(ret_dict['input_ids'])}\")\n            print(f\"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}\")\n            print(f\"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids'])}\")\n            print(f\"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels)}\")",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:201-218"
+    },
+    "243": {
+        "file_id": 27,
+        "content": "This code defines three methods: \"process_text\", \"process_image\", and \"_print_sample\". The first method processes text input, the second converts an Image.Image object to a torch.Tensor, and the last one prints sample information if it's the first time running. It appears to be part of a larger class for processing images and text in a conversation dataset.",
+        "type": "comment"
+    },
+    "244": {
+        "file_id": 27,
+        "content": "            if 'image' in ret_dict and ret_dict['image'] is not None:\n                image = ret_dict['image']\n                if isinstance(image, torch.Tensor):\n                    print(f\"            image: {image.shape}\")\n                elif isinstance(image, dict):\n                    print(f\"            image: {image.keys()}\")\n                elif isinstance(image, list) and len(image) > 0:\n                    print(f\"            image: {len(image)}, {type(image[0])}\")\n                else:\n                    print(f\"            image: {type(image)}\")\n            print(\"====================================================\", flush=True)\n            try:\n                if self.training_args is not None:\n                    _save_obj = {\n                        'ret_dict': ret_dict,\n                        'raw_conv': raw_conv,\n                        'conv': conv.get_prompt(),\n                    }\n                    from pathlib import Path\n                    output_dir = Path(self.training_args.output_dir)",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:219-238"
+    },
+    "245": {
+        "file_id": 27,
+        "content": "The code checks if 'image' is in the ret_dict and if it is not None. If so, it prints the image shape if it is a tensor, image keys if it is a dictionary, number of images and their type if it is a list, and the image type otherwise. Then, it tries to save an object containing ret_dict, raw_conv, and conv prompt if training_args are not None and output_dir exists.",
+        "type": "comment"
+    },
+    "246": {
+        "file_id": 27,
+        "content": "                    output_dir.mkdir(exist_ok=True, parents=True)\n                    _local_rank = self.training_args.local_rank\n                    _word_size = self.training_args.world_size\n                    _file_path = str(output_dir / f'sample_check_{self.mode}_{_local_rank}_{_word_size}.pt')\n                    print(f'saving some sample to {_file_path} for check.')\n                    torch.save(_save_obj, _file_path)\n            except Exception as e:\n                warnings.warn(f'try to save samples but get exception: {e.args}. ignored.')\nclass SingleImageConvDataset(SingleImageConvDatasetMixin, Dataset):\n    _repr_indent = 4\n    def __init__(self, *args, dataset_generator: Type[Dataset], **kwargs):\n        super().__init__(*args, **kwargs)\n        self.dataset_generator = dataset_generator\n        self.dataset = None\n    def initialize_if_needed(self):\n        \"\"\"\n        lazy initialize for big in-memory python object due to python 'copy-on-read' behavior\n        when num_worker > 0. refer: https://github.com/pytorch/pytorch/issues/13246",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:239-260"
+    },
+    "247": {
+        "file_id": 27,
+        "content": "The code is creating a SingleImageConvDataset class, which inherits from SingleImageConvDatasetMixin and Dataset classes. It initializes an instance of the dataset_generator type specified during object creation, sets it as self.dataset, and provides a method for lazy initialization if num_worker > 0 to avoid 'copy-on-read' behavior.",
+        "type": "comment"
+    },
+    "248": {
+        "file_id": 27,
+        "content": "        \"\"\"\n        if self.dataset is None:\n            # warnings.warn(\"it's highly recommended that set persistent_workers=True, \"\n            #               \"otherwise this initialize code will run in every epoch beginning.\"\n            #               \"(ignore me if set)\")\n            self.dataset = self.dataset_generator()\n    def __len__(self):\n        self.initialize_if_needed()\n        return len(self.dataset)\n    def get_raw_item(self, index) -> Dict[str, Any]:\n        self.initialize_if_needed()\n        return self.dataset[index]\n    def __repr__(self) -> str:\n        head = \"Dataset \" + self.__class__.__name__\n        body = [\n            f\"Number of datapoints: {self.__len__()}\",\n        ]\n        body += self.dataset.__repr__().splitlines()\n        lines = [head] + [\" \" * self._repr_indent + line for line in body]\n        return \"\\n\".join(lines)\nfrom mllm.models.sam.transforms import ResizeAndPad\nclass SingleImageConvSegDataset(SingleImageConvDatasetMixin, Dataset):\n    _repr_indent = 4\n    def __init__(self, *args, dataset_generator: Type[Dataset], **kwargs):",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:261-290"
+    },
+    "249": {
+        "file_id": 27,
+        "content": "This code defines a class, SingleImageConvSegDataset, which is a subclass of the Dataset class and extends another class SingleImageConvDatasetMixin. The class has an optional dataset_generator parameter for generating datasets, and it includes methods like __len__, get_raw_item, and __repr__ to return information about the dataset, such as number of datapoints and its representation. It also uses ResizeAndPad transforms for data processing.",
+        "type": "comment"
+    },
+    "250": {
+        "file_id": 27,
+        "content": "        super().__init__(*args, **kwargs)\n        self.dataset_generator = dataset_generator\n        self.dataset = None\n        self.sam_transform = ResizeAndPad(1024)\n    def initialize_if_needed(self):\n        \"\"\"\n        lazy initialize for big in-memory python object due to python 'copy-on-read' behavior\n        when num_worker > 0. refer: https://github.com/pytorch/pytorch/issues/13246\n        \"\"\"\n        if self.dataset is None:\n            # warnings.warn(\"it's highly recommended that set persistent_workers=True, \"\n            #               \"otherwise this initialize code will run in every epoch beginning.\"\n            #               \"(ignore me if set)\")\n            self.dataset = self.dataset_generator()\n    def __len__(self):\n        self.initialize_if_needed()\n        return len(self.dataset)\n    def get_raw_item(self, index) -> Dict[str, Any]:\n        self.initialize_if_needed()\n        return self.dataset[index]\n    def __repr__(self) -> str:\n        head = \"Dataset \" + self.__class__.__name__",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:291-316"
+    },
+    "251": {
+        "file_id": 27,
+        "content": "This code defines a class for a dataset generator with lazy initialization to handle big in-memory Python objects. The `initialize_if_needed` method is called when needed, and the `__len__` and `get_raw_item` methods provide access to the dataset items. It is recommended to set `persistent_workers=True` to avoid running the initialize code in every epoch.",
+        "type": "comment"
+    },
+    "252": {
+        "file_id": 27,
+        "content": "        body = [\n            f\"Number of datapoints: {self.__len__()}\",\n        ]\n        body += self.dataset.__repr__().splitlines()\n        lines = [head] + [\" \" * self._repr_indent + line for line in body]\n        return \"\\n\".join(lines)\n    def __getitem__(self, index, debug_mode=False, return_conv=False) -> Dict[str, Any]:\n        # getitem\n        item = self.get_raw_item(index)\n        image: Image.Image = item.get('image', None)\n        target: Dict[str, Any] = item.get('target', None)\n        raw_conv: List[Dict[str, Any]] = item['conversations']\n        ret_w, ret_h = image.width, image.height\n        ret_masks = target.get(\"masks\", None)\n        # sam transform\n        sam_image, sam_masks, sam_hw = self.sam_transform(image, target.get(\"masks\", None))\n        # transform\n        assert isinstance(image, list) == isinstance(target, list)\n        multimage_mode = isinstance(image, list)\n        if isinstance(image, list):\n            # TODO: validate raw item\n            transformed_image, transformed_target = [], []",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:317-342"
+    },
+    "253": {
+        "file_id": 27,
+        "content": "This function returns a string representation of the dataset, including the number of datapoints and the content of each item. It also retrieves an item from the dataset at the given index, performing any necessary transformations on the image and masks before returning them in a list format.",
+        "type": "comment"
+    },
+    "254": {
+        "file_id": 27,
+        "content": "            for img, tgt in zip(image, target):\n                if self.transforms is not None and image is not None:\n                    img, tgt = self.transforms(img, tgt)\n                if tgt is not None:\n                    tgt['width'], tgt['height'] = img.width, img.height\n                transformed_image.append(img)\n                transformed_target.append(tgt)\n            image, target = transformed_image, transformed_target\n        else:\n            self.validate_raw_item(item)  # only validate for single image.\n            if self.transforms is not None and image is not None:\n                image, target = self.transforms(image, target)\n            has_image = 'image' in item and bool(item['image'])\n            has_target = 'target' in item and bool(item['target']) and any(bool(elem) for elem in item['target'].values())\n            if has_target and has_image:\n                target['width'], target['height'] = image.width, image.height\n        # preprocess\n        raw_conv = self.process_conv(raw_conv)",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:343-362"
+    },
+    "255": {
+        "file_id": 27,
+        "content": "The code performs image preprocessing for single and multi-image conversations. It iterates over images and targets, applies transformations if specified, updates target dimensions based on image size, appends processed images and targets into lists, and validates raw items for single image cases. If a target and image exist, it also updates target and image width/height based on the image size.",
+        "type": "comment"
+    },
+    "256": {
+        "file_id": 27,
+        "content": "        raw_conv, image = self.process_conv_multimage(raw_conv, image)\n        raw_conv, tar_boxes = self.process_target(raw_conv, target, multimage_mode=multimage_mode)\n        conv = self.build_conv(raw_conv)\n        if return_conv:\n            # noinspection PyTypeChecker\n            return conv\n        text_dict = self.process_text(conv)\n        image_dict = self.process_image(image)\n        # return\n        ret_dict = {}\n        ret_dict.update(text_dict)\n        ret_dict.update(image_dict)\n        ret_dict[\"loc_inputs\"] = tar_boxes[\"all_boxes\"]\n        ret_dict[\"loc_targets\"] = tar_boxes[\"gpt_boxes\"]\n        ret_dict[\"images_sam\"] = sam_image\n        ret_dict[\"masks_sam\"] = sam_masks\n        ret_dict[\"img_size\"] = torch.tensor([ret_h, ret_w])\n        ret_dict[\"unresized_masks\"] = torch.tensor(ret_masks[0])\n        self._print_sample(ret_dict, raw_conv, conv)\n        if debug_mode:\n            return {'ret': ret_dict, 'raw_conv': raw_conv, 'conv': conv, 'image': image}\n        return ret_dict\n__all__ = ['SingleImageConvDatasetMixin', 'SingleImageConvDataset']",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:363-388"
+    },
+    "257": {
+        "file_id": 27,
+        "content": "The code defines a class that processes multi-image conversations and returns a dictionary containing text, image, and target information. It first processes the raw conversation data and images, then builds the conversation and finally, it processes the text and image data separately. The resulting dictionaries contain information like location inputs, targets, sampled images, masks, image size, and unresized masks. The function also has a debug mode to return additional information.",
+        "type": "comment"
+    },
+    "258": {
+        "file_id": 27,
+        "content": "WRAPPER_DATASET = {\n    \"conv\": SingleImageConvDataset,\n    \"conv_seg\": SingleImageConvSegDataset,\n}",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_convsation.py:389-392"
+    },
+    "259": {
+        "file_id": 27,
+        "content": "This code defines a dictionary called WRAPPER_DATASET that maps dataset names \"conv\" and \"conv_seg\" to their respective classes SingleImageConvDataset and SingleImageConvSegDataset. These datasets are likely used for processing single image conversation tasks in the NExT-Chat project.",
+        "type": "comment"
+    },
+    "260": {
+        "file_id": 28,
+        "content": "/mllm/dataset/single_image_interactive.py",
+        "type": "filepath"
+    },
+    "261": {
+        "file_id": 28,
+        "content": "The code creates a class for single image datasets, validates inputs and applies transformations before storing them. It provides methods to manage data storage, retrieval, and conversion to Gradio Chatbot format, making it suitable for chat apps with images.",
+        "type": "summary"
+    },
+    "262": {
+        "file_id": 28,
+        "content": "import copy\nfrom typing import Optional\nfrom PIL import Image\nimport torch\nfrom .single_image_convsation import SingleImageConvDatasetMixin\nfrom mllm.models.sam.transforms import ResizeAndPad\nclass SingleImageInteractive(SingleImageConvDatasetMixin):\n    _printed_sample = True\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, **kwargs)\n        self.image: Optional[Image.Image] = None\n        self.roles = ('human', 'gpt')\n        self.boxes = []\n        self.points = []\n        self.raw_conv = []\n        self.conversations = []\n        self.sam_transform = ResizeAndPad(1024)\n    def set_image(self, image: Image.Image):\n        assert self.image is None, f\"{image}\"\n        self.image = image\n    def append_message(self, role: str, message: str, *, boxes=None, points=None, boxes_seq=None, points_seq=None):\n        \"\"\"Append a new message.\"\"\"\n        assert role in self.roles\n        def convert_idx(objs_seq, objs_value, get_obj_idx_func):\n            if objs_seq is None:\n                return None",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_interactive.py:1-33"
+    },
+    "263": {
+        "file_id": 28,
+        "content": "This code defines a class for interactive single image dataset, which allows appending messages with roles, boxes, and points. It initializes attributes and includes methods to set the image and append messages. The ResizeAndPad transform is used for image resizing.",
+        "type": "comment"
+    },
+    "264": {
+        "file_id": 28,
+        "content": "            ret = []\n            for objs_idx in objs_seq:\n                new_objs_idx = []\n                for idx in objs_idx:\n                    new_idx = get_obj_idx_func(objs_value[idx])\n                    new_objs_idx.append(new_idx)\n                ret.append(tuple(new_objs_idx))\n            return tuple(ret)\n        boxes_seq = convert_idx(boxes_seq, boxes, self._get_box_idx)\n        points_seq = convert_idx(points_seq, points, self._get_point_idx)\n        if self.image is not None:\n            previous_message_has_image_placeholder = any(\n                '<image>' in item['value'] for item in self.conversations\n            )\n            if not previous_message_has_image_placeholder and '<image>' not in message:\n                message = '<image> ' + message\n            if previous_message_has_image_placeholder and '<image>' in message:\n                message = message.replace('<image>', '')\n        self.conversations.append(\n            {\n                'from': role,\n                'value': message,",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_interactive.py:34-58"
+    },
+    "265": {
+        "file_id": 28,
+        "content": "This function converts object indices and applies the conversion to box and point sequences. It then checks if the previous message had an image placeholder, and modifies the current message accordingly before appending a new conversation entry with the specified 'from' role and message value.",
+        "type": "comment"
+    },
+    "266": {
+        "file_id": 28,
+        "content": "                'boxes_seq': copy.deepcopy(boxes_seq),\n                'points_seq': copy.deepcopy(points_seq),\n            }\n        )\n    def get_raw_item(self, index=None):\n        ret = copy.deepcopy({\n            'image': self.image,\n            'target': {\n                'boxes': self.boxes,\n                'points': self.points,\n            },\n            'conversations': self.conversations,\n        })\n        assert ret['conversations'][0]['from'] == self.roles[0]\n        if ret['conversations'][-1]['from'] == self.roles[0]:\n            ret['conversations'].append(\n                {\n                    'from': self.roles[1],\n                    'value': '',\n                }\n            )\n        return ret\n    def to_model_input(self):\n        item = self.__getitem__(0)\n        ret = {'input_ids': item['input_ids'].unsqueeze(0).cuda()}\n        if 'image' in item and item['image'] is not None:\n            ret['images'] = item['image'].unsqueeze(0).cuda()\n        else:\n            ret['images'] = None\n        if item.get(\"loc_inputs\", None) is not None:",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_interactive.py:59-91"
+    },
+    "267": {
+        "file_id": 28,
+        "content": "This code is part of a dataset for an interactive image chatbot. It defines classes for storing data related to images, boxes, points, and conversations. The `get_raw_item` method returns a copy of the raw item data, ensuring that the 'conversations' list always ends with a response from the second role. The `to_model_input` method converts an item into model input format, including input IDs, image(s), and optional location inputs if present.",
+        "type": "comment"
+    },
+    "268": {
+        "file_id": 28,
+        "content": "            ret['loc_inputs'] = torch.tensor(item['loc_inputs']).cuda()\n        if item.get(\"images_sam\", None) is not None:\n            ret['images_sam'] = item['images_sam'].unsqueeze(0).cuda()\n        ret['attention_mask'] = None\n        return ret\n    def to_gradio_chatbot_new_messages(self):\n        conv = self.__getitem__(0, return_conv=True)\n        new_messages = conv.messages[-2:]\n        ret_messages = []\n        for r, m in new_messages:\n            nm = m.replace('<im_patch>', '').replace('<im_end>', '').replace('<im_start>', '<image>')\n            ret_messages.append((r, nm))\n        return ret_messages\n    def _get_box_idx(self, box):\n        assert isinstance(box, (tuple, list)), f\"{type(box)}\"\n        assert isinstance(box[0], (int, float)), f\"{type(box[0])}\"\n        assert len(box) == 4\n        box = tuple(box)\n        if box not in self.boxes:\n            self.boxes.append(box)\n            return len(self.boxes) - 1\n        else:\n            return self.boxes.index(box)\n    def _get_point_idx(self, point):",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_interactive.py:92-118"
+    },
+    "269": {
+        "file_id": 28,
+        "content": "The code includes a function that processes a dataset for single image interactive tasks. It assigns tensorized 'loc_inputs' if available, and creates 'images_sam' tensor if the corresponding data exists. The function also sets 'attention_mask' to None. Another function converts new messages into the Gradio Chatbot format by stripping unnecessary tags from the messages. A method is used to retrieve an index of a box or point given its coordinates. It checks if the box is in the boxes list and returns its index, or adds it to the list and returns the index.",
+        "type": "comment"
+    },
+    "270": {
+        "file_id": 28,
+        "content": "        assert isinstance(point, (tuple, list))\n        assert isinstance(point[0], (int, float))\n        assert len(point) == 2\n        point = tuple(point)\n        if point not in self.points:\n            self.points.append(tuple(point))\n            return len(self.points) - 1\n        else:\n            return self.points.index(point)\n    def __len__(self):\n        return 1\n    def __getitem__(self, index, debug_mode=False, return_conv=False):\n        # getitem\n        item = self.get_raw_item(index)\n        image = item.get('image', None)\n        target = item.get('target', None)\n        raw_conv = item['conversations']\n        # sam transform\n        sam_image, sam_masks, sam_hw = self.sam_transform(image, target.get(\"masks\", None))\n        # transform\n        assert isinstance(image, list) == isinstance(target, list)\n        multimage_mode = isinstance(image, list)\n        if isinstance(image, list):\n            # TODO: validate raw item\n            transformed_image, transformed_target = [], []\n            for img, tgt in zip(image, target):",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_interactive.py:119-148"
+    },
+    "271": {
+        "file_id": 28,
+        "content": "This code seems to be part of a class that handles interactive single-image data for a chat application. It validates the input 'point' and manages its storage in a list called 'self.points'. The class also provides methods to return the length of the list and retrieve elements by their index. The code applies transformations to the images and targets before storing them. It mentions using a 'sam_transform' function but does not specify what it does. It also notes that if 'image' is a list, it will apply transformations to each individual element in the list.",
+        "type": "comment"
+    },
+    "272": {
+        "file_id": 28,
+        "content": "                if self.transforms is not None and image is not None:\n                    img, tgt = self.transforms(img, tgt)\n                if tgt is not None:\n                    tgt['width'], tgt['height'] = img.width, img.height\n                transformed_image.append(img)\n                transformed_target.append(tgt)\n            image, target = transformed_image, transformed_target\n        else:\n            self.validate_raw_item(item)  # only validate for single image.\n            if self.transforms is not None and image is not None:\n                image, target = self.transforms(image, target)\n            has_image = 'image' in item and bool(item['image'])\n            has_target = 'target' in item and bool(item['target']) and any(bool(elem) for elem in item['target'].values())\n            if has_target and has_image:\n                target['width'], target['height'] = image.width, image.height\n        # preprocess\n        raw_conv = self.process_conv(raw_conv)\n        raw_conv, image = self.process_conv_multimage(raw_conv, image)",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_interactive.py:149-168"
+    },
+    "273": {
+        "file_id": 28,
+        "content": "The code is responsible for data preprocessing in an image interactive dataset. It checks if transforms and image are not None, applies the transforms, updates width and height of target images, and appends to lists. If only single image, validates raw item and applies transforms. Then, it processes convolution and updates image using multimage process.",
+        "type": "comment"
+    },
+    "274": {
+        "file_id": 28,
+        "content": "        raw_conv, tar_boxes = self.process_target(raw_conv, target, multimage_mode=multimage_mode)\n        conv = self.build_conv(raw_conv)\n        if return_conv:\n            # noinspection PyTypeChecker\n            return conv\n        text_dict = self.process_text(conv)\n        image_dict = self.process_image(image)\n        # return\n        ret_dict = {}\n        ret_dict.update(text_dict)\n        ret_dict.update(image_dict)\n        ret_dict[\"loc_inputs\"] = tar_boxes[\"all_boxes\"]\n        ret_dict[\"loc_targets\"] = tar_boxes[\"gpt_boxes\"]\n        ret_dict[\"images_sam\"] = sam_image\n        ret_dict[\"masks_sam\"] = sam_masks\n        self._print_sample(ret_dict, raw_conv, conv)\n        if debug_mode:\n            return {'ret': ret_dict, 'raw_conv': raw_conv, 'conv': conv, 'image': image}\n        return ret_dict",
+        "type": "code",
+        "location": "/mllm/dataset/single_image_interactive.py:169-188"
+    },
+    "275": {
+        "file_id": 28,
+        "content": "This function processes raw conversation data, builds a conversation and updates it with text and image data. It then adds target boxes for both input and target locations, as well as sampled images and masks. Finally, it prints the sample and returns the final dictionary of results. Debug mode optionally includes additional information like raw_conv, conv, and image in the return value.",
+        "type": "comment"
+    },
+    "276": {
+        "file_id": 29,
+        "content": "/mllm/dataset/utils/__init__.py",
+        "type": "filepath"
+    },
+    "277": {
+        "file_id": 29,
+        "content": "This code imports functions and classes from various modules within the \"utils\" directory, which are used for tasks like reading images, initializing ceph clients, transforming data, computing metrics, mixing datasets, and more.",
+        "type": "summary"
+    },
+    "278": {
+        "file_id": 29,
+        "content": "from .io import read_img_general, init_ceph_client_if_needed\nfrom .transform import Expand2square, de_norm_box_xyxy, norm_box_xyxy, expand2square, box_xywh_to_xyxy\nfrom .compute_metrics import BaseComputeMetrics\nfrom .mixin import QuestionTemplateMixin, MInstrDataset\nfrom .concatenate_dataset import ConcatDataset, InterleaveDateset, SubSet, ConcatDatasetWithShuffle",
+        "type": "code",
+        "location": "/mllm/dataset/utils/__init__.py:1-5"
+    },
+    "279": {
+        "file_id": 29,
+        "content": "This code imports functions and classes from various modules within the \"utils\" directory, which are used for tasks like reading images, initializing ceph clients, transforming data, computing metrics, mixing datasets, and more.",
+        "type": "comment"
+    },
+    "280": {
+        "file_id": 30,
+        "content": "/mllm/dataset/utils/compute_metrics.py",
+        "type": "filepath"
+    },
+    "281": {
+        "file_id": 30,
+        "content": "This code defines `BaseComputeMetrics` class for evaluating transformer model predictions, decoding generated IDs to text, and calculating metrics between predicted and target sequences. It also logs warning about prediction and target sequence shapes. The code computes accuracy, failed target extractions, and failed predictions.",
+        "type": "summary"
+    },
+    "282": {
+        "file_id": 30,
+        "content": "import sys\nimport logging\nfrom typing import Dict, Any, Sequence\nfrom transformers import EvalPrediction\nfrom ...utils import decode_generate_ids\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\nlogging.basicConfig(\n    format=\"%(asctime)s - %(levelname)s - %(name)s - %(message)s\",\n    datefmt=\"%m/%d/%Y %H:%M:%S\",\n    handlers=[logging.StreamHandler(sys.stdout), ],\n)\nclass BaseComputeMetrics:\n    def __init__(self, preprocessor: Dict[str, Any]):\n        self.preprocessor = preprocessor\n        self.tokenizer = self.preprocessor['text']\n    def __call__(self, eval_preds: EvalPrediction) -> Dict[str, Any]:\n        preds, targets = eval_preds\n        logger.warning(f\"preds shape: {preds.shape}. targets shape: {targets.shape}\")\n        preds = decode_generate_ids(self.tokenizer, preds)\n        targets = decode_generate_ids(self.tokenizer, targets)\n        assert len(preds) == len(targets)\n        return self.calculate_metric(preds, targets)\n    def calculate_metric(self, preds: Sequence[str], targets: Sequence[str]) -> Dict[str, Any]:",
+        "type": "code",
+        "location": "/mllm/dataset/utils/compute_metrics.py:1-31"
+    },
+    "283": {
+        "file_id": 30,
+        "content": "This code is defining a class `BaseComputeMetrics` for computing metrics on evaluation predictions from transformers library. It initializes with a preprocessor and has methods to handle the evaluation predictions, decode the generated IDs into actual text using the tokenizer, and calculate the metric between the predicted and target sequences. The logger is set up to log warnings about the shapes of prediction and target sequences.",
+        "type": "comment"
+    },
+    "284": {
+        "file_id": 30,
+        "content": "        correct = 0\n        failed = 0\n        target_failed = 0\n        for pred, target in zip(preds, targets):\n            extract_pred = self.extract_ans(pred)\n            extract_target = self.extract_ans(target)\n            if extract_target is None:\n                target_failed += 1\n                logger.warning(f\"failed to extract ans from target. maybe the response string is truncated: {target}.\")\n                continue\n            if extract_pred is None:\n                failed += 1\n            if extract_pred == extract_target:\n                correct += 1\n        return {\n            'accuracy': 1.0 * correct / len(targets),\n            'target_failed': target_failed,\n            'failed': failed,\n        }\n    def extract_ans(self, string: str):\n        raise NotImplementedError",
+        "type": "code",
+        "location": "/mllm/dataset/utils/compute_metrics.py:32-53"
+    },
+    "285": {
+        "file_id": 30,
+        "content": "This code computes metrics for a machine learning model. It calculates accuracy, number of failed target extractions, and number of failed predictions. If the response string is truncated, it logs a warning. The extract_ans method must be implemented separately to extract answers from strings.",
+        "type": "comment"
+    },
+    "286": {
+        "file_id": 31,
+        "content": "/mllm/dataset/utils/concatenate_dataset.py",
+        "type": "filepath"
+    },
+    "287": {
+        "file_id": 31,
+        "content": "The code introduces two custom PyTorch dataset classes, \"ConcatDataset\" and \"InterleaveDataset\", with stop strategies and probabilities. It undersamples by interleaving datasets based on their lengths and creates infinite iterators for sampling and oversampling using NumPy's random.default_rng(). SubSet and ConcatDatasetWithShuffle classes are defined for subset selection and dataset concatenation with shuffling.",
+        "type": "summary"
+    },
+    "288": {
+        "file_id": 31,
+        "content": "from typing import List, Optional, Literal\nimport numpy as np\nfrom torch.utils.data import Dataset\nfrom torch.utils.data import ConcatDataset as TorchConcatDataset\nfrom torch.utils.data import Subset as TorchSubset\nfrom ..root import DATASETS\n@DATASETS.register_module()\nclass ConcatDataset(Dataset):\n    _repr_indent = 4\n    def __init__(self, cfgs):\n        self.cfgs = cfgs\n        datasets = [DATASETS.build(cfg) for cfg in cfgs]\n        self.concat_dataset = TorchConcatDataset(datasets)\n    def __len__(self):\n        return len(self.concat_dataset)\n    def __getitem__(self, index):\n        return self.concat_dataset[index]\n    def __repr__(self) -> str:\n        head = \"Dataset \" + self.__class__.__name__\n        body = [\n            f\"Number of datapoints: {self.__len__()}\",\n        ]\n        for i, ds in enumerate(self.concat_dataset.datasets):\n            body.append(f\"Subset {i + 1}/{len(self.concat_dataset.datasets)}\")\n            body += ds.__repr__().splitlines()\n        lines = [head] + [\" \" * self._repr_indent + line for line in body]",
+        "type": "code",
+        "location": "/mllm/dataset/utils/concatenate_dataset.py:1-34"
+    },
+    "289": {
+        "file_id": 31,
+        "content": "The code defines a class called \"ConcatDataset\" that concatenates multiple datasets together using the PyTorch's TorchConcatDataset. This class also provides methods to get the length of the dataset, access individual data points, and represents itself in a readable format.",
+        "type": "comment"
+    },
+    "290": {
+        "file_id": 31,
+        "content": "        return \"\\n\".join(lines)\n@DATASETS.register_module()\nclass InterleaveDateset(Dataset):\n    _repr_indent = 4\n    def __init__(\n            self,\n            cfgs,\n            probabilities: Optional[List[float]] = None,\n            seed: Optional[int] = 42,\n            stopping_strategy: Literal[\"first_exhausted\", \"all_exhausted\"] = \"first_exhausted\",\n    ):\n        self.cfgs = cfgs\n        self.probabilities = probabilities\n        self.seed = seed\n        self.stopping_strategy = stopping_strategy\n        datasets = [DATASETS.build(cfg) for cfg in cfgs]\n        self.concat_dataset = TorchConcatDataset(datasets)\n        self.index_mapping = _interleave_dataset_index(\n            lengths=[len(ds) for ds in datasets],\n            probabilities=probabilities,\n            seed=seed,\n            stopping_strategy=stopping_strategy,\n        )\n    def __len__(self):\n        return len(self.index_mapping)\n    def __getitem__(self, index):\n        return self.concat_dataset[self.index_mapping[index]]\n    def __repr__(self) -> str:",
+        "type": "code",
+        "location": "/mllm/dataset/utils/concatenate_dataset.py:35-70"
+    },
+    "291": {
+        "file_id": 31,
+        "content": "This code defines a custom dataset class, InterleaveDataset, that interleaves multiple datasets. It initializes the class with a list of configs, optional probabilities for interleaving, and an optional seed value for randomization. The stopping strategy can be either \"first_exhausted\" or \"all_exhausted\". It builds the individual datasets using the DATASETS module, then concatenates them into a TorchConcatDataset object. The index mapping is determined by _interleave_dataset_index function based on dataset lengths, probabilities, seed, and stopping strategy. The class provides length, getitem, and repr methods for data access and representation.",
+        "type": "comment"
+    },
+    "292": {
+        "file_id": 31,
+        "content": "        head = \"Dataset \" + self.__class__.__name__\n        body = [\n            f\"Number of datapoints: {self.__len__()}\",\n            f\"Probabilities: {self.probabilities}\",\n            f\"stopping_strategy: {self.stopping_strategy}\",\n            f\"seed: {self.seed}\",\n        ]\n        for i, ds in enumerate(self.concat_dataset.datasets):\n            body.append(f\"Subset {i + 1}/{len(self.concat_dataset.datasets)}\")\n            body += ds.__repr__().splitlines()\n        lines = [head] + [\" \" * self._repr_indent + line for line in body]\n        return \"\\n\".join(lines)\n# stolen from huggingface/datasets\n# https://github.com/huggingface/datasets/blob/074925b9b7c1dfd33b8675aa99c07cc26375665c/src/datasets/arrow_dataset.py#L5987\ndef _interleave_dataset_index(\n        *,\n        lengths: List[int],\n        probabilities: Optional[List[float]] = None,\n        seed: Optional[int] = None,\n        stopping_strategy: Literal[\"first_exhausted\", \"all_exhausted\"] = \"first_exhausted\",\n):\n    if probabilities is not None and 0 in probabilities:",
+        "type": "code",
+        "location": "/mllm/dataset/utils/concatenate_dataset.py:71-94"
+    },
+    "293": {
+        "file_id": 31,
+        "content": "This function generates a string representation of a dataset. It includes the dataset's name, number of datapoints, probabilities, stopping strategy, and information about its subsets. The code is borrowed from the Hugging Face datasets library, specifically the arrow_dataset.py file.",
+        "type": "comment"
+    },
+    "294": {
+        "file_id": 31,
+        "content": "        assert stopping_strategy == 'first_exhausted', \"you will meet a Infinite loop\"\n    # Let's now build the indices to pass to .select()\n    offsets = np.cumsum([0] + lengths[:-1])\n    # if stopping_strategy is \"first_exhausted\", it is an undersampling situation whereas it is an oversampling situation if it is \"all_exhausted\"\n    oversampling = stopping_strategy == \"all_exhausted\"\n    if probabilities is None and not oversampling:\n        # Undersampling situation with cycling between each sources\n        # Example:: If lengths of the datasets are [3, 4, 5]\n        # Then the resulting indices should be [0, 3, 7, 1, 4, 8, 2, 6, 9]\n        # Note that we only have 3 examples per dataset since the first dataset ran out of examples\n        # Reasoning behind the following operation: keeping the min_length first indices of each dataset\n        # while offsetting in order to correspond to the right indices of the concatenated dataset\n        # and flattening to effectively interleave the datasets\n ",
+        "type": "code",
+        "location": "/mllm/dataset/utils/concatenate_dataset.py:95-111"
+    },
+    "295": {
+        "file_id": 31,
+        "content": "The code is performing undersampling by cycling through each source dataset based on their lengths, resulting in a new sequence of indices that interleave the datasets. This ensures all sources are included in the output, and the order of the data is determined by the minimum length dataset.",
+        "type": "comment"
+    },
+    "296": {
+        "file_id": 31,
+        "content": "       indices = (offsets.reshape(1, -1) + np.arange(min(lengths)).reshape(-1, 1)).flatten().tolist()\n    elif probabilities is None:\n        # Oversampling situation with cycling between each sources\n        # Then the resulting indices should be [0, 3, 7, 1, 4, 8, 2, 5, 9, 0, 6, 10, 1, 3, 11]\n        # Note that we have 5 examples per dataset with a rolling window since the longest dataset has 5 samples\n        # Reasoning behind the following operation: for each dataset indices (i.e column) repeat the indices to have max_length indices per dataset\n        # For example, if the max_length is 5 and the i-th dataset has 3 samples, the i-th column will be [0,1,2,0,1]\n        indices = np.mod(np.arange(max(lengths)).reshape(-1, 1), np.array(lengths).reshape(1, -1))\n        # We have to keep the indices to their respective dataset offsets and to flatten to effectively interleave the datasets\n        indices = (indices + offsets).flatten().tolist()\n    else:\n        # boolean array indicating if at index i if the dataset_i has been fully exhausted",
+        "type": "code",
+        "location": "/mllm/dataset/utils/concatenate_dataset.py:111-125"
+    },
+    "297": {
+        "file_id": 31,
+        "content": "Code handles three different scenarios for creating indices to concatenate datasets. If probabilities are not None, it uses oversampling by cycling between each source dataset. If probabilities are None and lengths are equal, it simply creates a flat list of indices. In the last scenario, it checks if each dataset has been fully exhausted using a boolean array.",
+        "type": "comment"
+    },
+    "298": {
+        "file_id": 31,
+        "content": "        is_exhausted = np.full(len(lengths), False)\n        # if undersampling (\"first_exhausted\"), we stop as soon as one dataset is exhausted\n        # if oversampling (\"all_exhausted\"), we stop as soons as every dataset is exhausted, i.e as soon as every samples of every dataset has been visited at least once\n        bool_strategy_func = np.all if oversampling else np.any\n        def iter_random_indices():\n            \"\"\"Get an infinite iterator that randomly samples the index of the source to pick examples from.\"\"\"\n            rng = np.random.default_rng(seed)\n            while True:\n                yield from (int(i) for i in rng.choice(len(lengths), size=1000, p=probabilities))\n        current_index = [0] * len(lengths)\n        indices = []\n        for source_idx in iter_random_indices():\n            # If no oversampling, we stop as soon as a dataset has ran out of examples (np.any)\n            # Otherwise, we stop as soon as every dataset has ran out of examples (np.all)\n            if bool_strategy_func(is_exhausted):",
+        "type": "code",
+        "location": "/mllm/dataset/utils/concatenate_dataset.py:126-143"
+    },
+    "299": {
+        "file_id": 31,
+        "content": "This code generates an infinite iterator that randomly samples indices from datasets based on the specified strategy (first_exhausted or all_exhausted). It uses NumPy's random.default_rng() to generate random indices and tracks dataset exhaustion using is_exhausted boolean array. The function yields these indices, allowing for oversampling if specified by all_exhausted parameter, otherwise stopping when one dataset runs out of examples with first_exhausted.",
+        "type": "comment"
+    }
+}

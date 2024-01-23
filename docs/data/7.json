@@ -1,0 +1,400 @@
+{
+    "700": {
+        "file_id": 52,
+        "content": "        new_h, new_w = self.get_preprocess_shape(\n            original_size[0], original_size[1], self.target_length\n        )\n        coords = deepcopy(coords).to(torch.float)\n        coords[..., 0] = coords[..., 0] * (new_w / old_w)\n        coords[..., 1] = coords[..., 1] * (new_h / old_h)\n        return coords\n    def apply_boxes_torch(\n        self, boxes: torch.Tensor, original_size: Tuple[int, ...]\n    ) -> torch.Tensor:\n        \"\"\"\n        Expects a torch tensor with shape Bx4. Requires the original image\n        size in (H, W) format.\n        \"\"\"\n        boxes = self.apply_coords_torch(boxes.reshape(-1, 2, 2), original_size)\n        return boxes.reshape(-1, 4)\n    @staticmethod\n    def get_preprocess_shape(oldh: int, oldw: int, long_side_length: int) -> Tuple[int, int]:\n        \"\"\"\n        Resize to [long_side_length, long_side_length]\n        \"\"\"\n        scale = long_side_length * 1.0 / max(oldh, oldw)\n        newh, neww = oldh * scale, oldw * scale\n        neww = int(neww + 0.5)\n        newh = int(newh + 0.5)",
+        "type": "code",
+        "location": "/mllm/models/sam/transforms.py:82-108"
+    },
+    "701": {
+        "file_id": 52,
+        "content": "This code defines transform functions for image boxes. The `transforms.py` file contains methods like `get_preprocess_shape`, `apply_coords_torch`, and `apply_boxes_torch`. \nThe `get_preprocess_shape` function takes original image dimensions (oldh, oldw) and target length (long_side_length) to compute new height (newh) and width (neww). The `apply_coords_torch` applies coordinate transformation to input boxes using the given original size. Lastly, the `apply_boxes_torch` reshapes the boxes tensor and then applies the coordinate transformation.",
+        "type": "comment"
+    },
+    "702": {
+        "file_id": 52,
+        "content": "        return (newh, neww)\nclass ResizeAndPad:\n    def __init__(self, target_size):\n        self.target_size = target_size\n        self.transform = ResizeLongestSide(target_size)\n        self.to_tensor = transforms.ToTensor()\n        self.pixel_mean = torch.Tensor([123.675, 116.28, 103.53]).view(-1, 1, 1)\n        self.pixel_std = torch.Tensor([58.395, 57.12, 57.375]).view(-1, 1, 1)\n    def __call__(self, image, masks):\n        # Resize image and masks\n        og_h, og_w = image.height, image.width\n        image = self.transform.apply_image(image)\n        if masks is not None:\n            masks = [torch.tensor(self.transform.apply_image(mask)).float() for mask in masks]\n        # image = self.to_tensor(image)\n        image = torch.as_tensor(image)\n        image = image.permute(2, 0, 1).contiguous()\n        image = (image - self.pixel_mean) / self.pixel_std\n        # Pad image and masks to form a square\n        _, h, w = image.shape\n        max_dim = max(w, h)\n        pad_w = (max_dim - w) // 2\n        pad_h = (max_dim - h) // 2",
+        "type": "code",
+        "location": "/mllm/models/sam/transforms.py:109-138"
+    },
+    "703": {
+        "file_id": 52,
+        "content": "The code defines a ResizeAndPad class that takes an image and masks, resizes them to the target size using ResizeLongestSide, then pads them to form a square. The pixel mean and standard deviation are used for normalization. The class has an __init__ method and a __call__ method for applying the transformations.",
+        "type": "comment"
+    },
+    "704": {
+        "file_id": 52,
+        "content": "        padding = (pad_w, pad_h, max_dim - w - pad_w, max_dim - h - pad_h)\n        image = transforms.Pad(padding)(image)\n        if masks is not None:\n            masks = [transforms.Pad(padding)(mask) for mask in masks]\n        # Adjust bounding boxes\n        # bboxes = self.transform.apply_boxes(bboxes, (og_h, og_w))\n        # bboxes = [[bbox[0] + pad_w, bbox[1] + pad_h, bbox[2] + pad_w, bbox[3] + pad_h] for bbox in bboxes]\n        return image, masks, torch.tensor([h, w], dtype=torch.float)",
+        "type": "code",
+        "location": "/mllm/models/sam/transforms.py:140-149"
+    },
+    "705": {
+        "file_id": 52,
+        "content": "Applies padding to the image and masks, adjusts bounding boxes if masks are not None, and returns the padded image, masks, and a tensor with the original image height and width.",
+        "type": "comment"
+    },
+    "706": {
+        "file_id": 53,
+        "content": "/mllm/pipeline/finetune.py",
+        "type": "filepath"
+    },
+    "707": {
+        "file_id": 53,
+        "content": "The code prepares the environment for training a machine learning model, handles training and evaluation tasks, logs metrics, saves models, manages errors, and performs multi-predict if enabled.",
+        "type": "summary"
+    },
+    "708": {
+        "file_id": 53,
+        "content": "import os\nimport sys\nimport logging\nimport pathlib\nimport typing\nimport warnings\nSLURM_ENV = {k: v for k, v in os.environ.items() if 'SLURM' in k}\nif SLURM_ENV:\n    print(f\"SLURM_ENV: {SLURM_ENV}\")\nproject_path = pathlib.Path(__file__).parent.parent.parent\nsys.path.append(str(project_path))\nimport torch\nimport torch.cuda\nfrom mllm.config import prepare_args\nfrom mllm.models import load_pretrained\nfrom mllm.utils import print_trainable_params\nfrom mllm.engine import prepare_trainer_collator\nfrom mllm.dataset import prepare_data, prepare_target_processor\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\nlogging.basicConfig(\n    format=\"%(asctime)s - %(levelname)s - %(name)s - %(message)s\",\n    datefmt=\"%m/%d/%Y %H:%M:%S\",\n    handlers=[logging.StreamHandler(sys.stdout), ],\n)\ndef main():\n    cfg, training_args = prepare_args()\n    model, preprocessor = load_pretrained(cfg.model_args, training_args)\n    # Some ugly codes to inject target_processor into preprocessor.\n    # maybe effect model. (e.g. add special token; resize embedding)",
+        "type": "code",
+        "location": "/mllm/pipeline/finetune.py:1-36"
+    },
+    "709": {
+        "file_id": 53,
+        "content": "This code is importing necessary modules and preparing the training environment for a machine learning model. It sets up the logging, loads the pre-trained model, and processes the data for training. The main function handles arguments and initializes the model and data processor.",
+        "type": "comment"
+    },
+    "710": {
+        "file_id": 53,
+        "content": "    model, preprocessor = prepare_target_processor(model, preprocessor, cfg.model_args, training_args)\n    print_trainable_params(model)\n    # Prepare data_collator\n    collator_kwargs = cfg.data_args.collator_kwargs\n    trainer_cls, data_collator_dict = prepare_trainer_collator(cfg.model_args, preprocessor, collator_kwargs)\n    dataset, compute_metrics = prepare_data(cfg.data_args, cfg.model_args, training_args, preprocessor)\n    # Initialize Trainer\n    trainer = trainer_cls(\n        model=model,\n        args=training_args,\n        tokenizer=preprocessor['text'],\n        train_dataset=dataset['train'] if training_args.do_train else None,\n        eval_dataset=dataset['validation'] if training_args.do_eval else None,\n        compute_metrics=compute_metrics if training_args.predict_with_generate else None,\n        **data_collator_dict,\n    )\n    # Training\n    if training_args.do_train:\n        try:\n            if (not training_args.overwrite_output_dir) and list(pathlib.Path(training_args.output_dir).glob(\"checkpoint-*\")):",
+        "type": "code",
+        "location": "/mllm/pipeline/finetune.py:37-59"
+    },
+    "711": {
+        "file_id": 53,
+        "content": "The code initializes a trainer for finetuning a model using the provided arguments, preprocessor, dataset, and compute metrics. It handles both training and evaluation tasks depending on the specified parameters, ensuring proper data handling with a data collator.",
+        "type": "comment"
+    },
+    "712": {
+        "file_id": 53,
+        "content": "                train_result = trainer.train(resume_from_checkpoint=True)\n            else:\n                train_result = trainer.train()\n            trainer.log_metrics(\"train\", train_result.metrics)  # noqa\n            trainer.save_metrics(\"train\", train_result.metrics)  # noqa\n            trainer.save_model()\n        except RuntimeError as e:\n            print(f\"got RuntimeError: {e.args}\")\n            try:\n                print(f\"#### device {training_args.local_rank} summary ####\\n{torch.cuda.memory_summary(training_args.local_rank)}\")\n            except Exception as inner_e:\n                print(f\"get Exception when show cuda summary: {inner_e.args}\")\n            raise e\n        finally:\n            trainer.save_state()  # noqa\n            trainer.plot_loss()\n    # save cfg to output_dir\n    try:\n        output_dir = training_args.output_dir\n        pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)\n        cfg.dump(os.path.join(output_dir, \"cfg.py\"))\n    except Exception as e:\n        warnings.warn(f'try to save cfg to output_dir, but get exception {e.args}')",
+        "type": "code",
+        "location": "/mllm/pipeline/finetune.py:60-83"
+    },
+    "713": {
+        "file_id": 53,
+        "content": "This code snippet trains a model using a trainer, logging metrics, saving the model, and handling potential RuntimeErrors. If a RuntimeError occurs, it prints the error message, attempts to display GPU memory summary, re-raises the exception, saves the trainer's state, and plots loss. It also tries to save the configuration file (cfg) to the output directory.",
+        "type": "comment"
+    },
+    "714": {
+        "file_id": 53,
+        "content": "    # Keyword arguments for `model.generate`\n    gen_kwargs = dict(cfg.data_args.gen_kwargs)\n    gen_kwargs.setdefault('use_cache', True)\n    # important for use model.generate in batch mode. some model config with wrong special_token_id\n    # (e.g. shikra generationConfig set pad_token_id to -1)\n    if hasattr(cfg.model_args, 'gen_kwargs_set_pad_token_id') and cfg.model_args.gen_kwargs_set_pad_token_id:\n        gen_kwargs['pad_token_id'] = preprocessor['text'].pad_token_id\n    if hasattr(cfg.model_args, 'gen_kwargs_set_bos_token_id') and cfg.model_args.gen_kwargs_set_bos_token_id:\n        gen_kwargs['bos_token_id'] = preprocessor['text'].bos_token_id\n    if hasattr(cfg.model_args, 'gen_kwargs_set_eos_token_id') and cfg.model_args.gen_kwargs_set_eos_token_id:\n        gen_kwargs['eos_token_id'] = preprocessor['text'].eos_token_id\n    # Evaluation\n    if training_args.do_eval:\n        if hasattr(trainer, '_test_collator') and hasattr(trainer, '_eval_collator') \\\n                and trainer._test_collator != trainer._eval_collator:  # noqa",
+        "type": "code",
+        "location": "/mllm/pipeline/finetune.py:85-100"
+    },
+    "715": {
+        "file_id": 53,
+        "content": "This code segment is setting default values for model.generate function arguments and handling specific token IDs based on the provided configuration. It also checks if evaluation is enabled, comparing test and eval collators in the trainer object.",
+        "type": "comment"
+    },
+    "716": {
+        "file_id": 53,
+        "content": "            warnings.warn('[WARNING!!!] use different collator for eval and test. but do_eval and '\n                          'do_predict both use trainer.predict (i.e. only test_collator is used.)')\n        eval_results = trainer.predict(dataset['validation'], metric_key_prefix=\"eval\", **gen_kwargs)\n        trainer.log_metrics(\"eval\", eval_results.metrics)  # noqa\n        trainer.save_metrics(\"eval\", eval_results.metrics)  # noqa\n        trainer.save_prediction(eval_results, file_key_prefix='eval')\n    # Predict\n    if training_args.do_predict:\n        predict_results = trainer.predict(dataset['test'], metric_key_prefix=\"test\", **gen_kwargs)\n        trainer.log_metrics(\"test\", predict_results.metrics)  # noqa\n        trainer.save_metrics(\"test\", predict_results.metrics)  # noqa\n        trainer.save_prediction(predict_results, file_key_prefix='test')\n    # Multi Predict\n    if training_args.do_multi_predict:\n        old_compute_metrics = trainer.compute_metrics\n        multitest = dataset['multitest']",
+        "type": "code",
+        "location": "/mllm/pipeline/finetune.py:101-118"
+    },
+    "717": {
+        "file_id": 53,
+        "content": "The code snippet handles evaluation and prediction in a machine learning training process. It logs metrics, saves results, and performs multi-predict if enabled. However, it warns about using the same collator for eval and test since trainer.predict only uses test_collator.",
+        "type": "comment"
+    },
+    "718": {
+        "file_id": 53,
+        "content": "        multitest = typing.cast(dict, multitest)\n        for _idx, (k, item) in enumerate(multitest.items()):\n            print(f'processing multitest set {_idx}/{len(multitest)}: {k}')\n            _ds = item['dataset']\n            _compute_metrics = item['compute_metric']\n            _prefix = f\"multitest_{k}\"\n            trainer.compute_metrics = _compute_metrics\n            _pred_results = trainer.predict(_ds, metric_key_prefix=_prefix, **gen_kwargs)\n            trainer.log_metrics(_prefix, _pred_results.metrics)  # noqa\n            trainer.save_metrics(_prefix, _pred_results.metrics)  # noqa\n            trainer.save_prediction(_pred_results, file_key_prefix=_prefix)\n        trainer.compute_metrics = old_compute_metrics\n# noinspection PyUnusedLocal\ndef _mp_fn(index):\n    # For xla_spawn (TPUs)\n    main()\nif __name__ == \"__main__\":\n    main()",
+        "type": "code",
+        "location": "/mllm/pipeline/finetune.py:119-141"
+    },
+    "719": {
+        "file_id": 53,
+        "content": "Code is iterating over the 'multitest' dictionary, processing each set by calling the trainer's predict method, logging and saving metrics and predictions. It also temporarily changes the compute_metrics for each iteration before returning to the original value.",
+        "type": "comment"
+    },
+    "720": {
+        "file_id": 54,
+        "content": "/mllm/pipeline/finetune_mem.py",
+        "type": "filepath"
+    },
+    "721": {
+        "file_id": 54,
+        "content": "This code adopts the LLaMA model with FlashAttn for memory efficiency. It appends the project path to sys.path, imports necessary modules, and patches the LLaMA attention with FlashAttn before calling the main function.",
+        "type": "summary"
+    },
+    "722": {
+        "file_id": 54,
+        "content": "# Adopted from https://github.com/lm-sys/FastChat. Below is the original copyright:\n# Adopted from tatsu-lab@stanford_alpaca. Below is the original copyright:\n# Make it more memory efficient by monkey patching the LLaMA model with FlashAttn.\nimport sys\nimport pathlib\nproject_path = pathlib.Path(__file__).parent.parent.parent\nsys.path.append(str(project_path))\n# Need to call this before importing transformers.\nfrom mllm.utils.llama_flash_attn_monkey_patch import replace_llama_attn_with_flash_attn\nreplace_llama_attn_with_flash_attn()\nfrom mllm.pipeline.finetune import main\n# noinspection PyUnusedLocal\ndef _mp_fn(index):\n    # For xla_spawn (TPUs)\n    main()\nif __name__ == \"__main__\":\n    main()",
+        "type": "code",
+        "location": "/mllm/pipeline/finetune_mem.py:1-25"
+    },
+    "723": {
+        "file_id": 54,
+        "content": "This code adopts the LLaMA model with FlashAttn for memory efficiency. It appends the project path to sys.path, imports necessary modules, and patches the LLaMA attention with FlashAttn before calling the main function.",
+        "type": "comment"
+    },
+    "724": {
+        "file_id": 55,
+        "content": "/mllm/utils/__init__.py",
+        "type": "filepath"
+    },
+    "725": {
+        "file_id": 55,
+        "content": "This code is importing various functions and classes from the \"common\" module in the same directory. These functions and classes are used for tasks like printing trainable parameters, showing outputs, drawing bounding boxes, and more. The code appears to be part of a larger machine learning or computer vision project involving image processing and text generation.",
+        "type": "summary"
+    },
+    "726": {
+        "file_id": 55,
+        "content": "from .common import (\n    print_trainable_params,\n    show,\n    draw_bounding_boxes,\n    post_process_generate_ids,\n    decode_generate_ids,\n    smart_tokenizer_and_embedding_resize,\n    ImageBoxState,\n    bbox_draw,\n    open_image,\n    parse_boxes,\n)",
+        "type": "code",
+        "location": "/mllm/utils/__init__.py:1-12"
+    },
+    "727": {
+        "file_id": 55,
+        "content": "This code is importing various functions and classes from the \"common\" module in the same directory. These functions and classes are used for tasks like printing trainable parameters, showing outputs, drawing bounding boxes, and more. The code appears to be part of a larger machine learning or computer vision project involving image processing and text generation.",
+        "type": "comment"
+    },
+    "728": {
+        "file_id": 56,
+        "content": "/mllm/utils/box_ops.py",
+        "type": "filepath"
+    },
+    "729": {
+        "file_id": 56,
+        "content": "This code provides utilities for bounding box manipulation, conversion between representations, and IoU calculation, including handling degenerate cases. It also computes bounding boxes from masks, calculates min/max coordinates in masked grids, and supports interpolation using torchvision or torch.nn.functional.",
+        "type": "summary"
+    },
+    "730": {
+        "file_id": 56,
+        "content": "# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved\n\"\"\"\nUtilities for bounding box manipulation and GIoU.\n\"\"\"\nimport torch\nfrom torchvision.ops.boxes import box_area\ndef box_cxcywh_to_xyxy(x):\n    x_c, y_c, w, h = x.unbind(-1)\n    b = [(x_c - 0.5 * w), (y_c - 0.5 * h),\n         (x_c + 0.5 * w), (y_c + 0.5 * h)]\n    return torch.stack(b, dim=-1)\ndef box_xyxy_to_cxcywh(x):\n    x0, y0, x1, y1 = x.unbind(-1)\n    b = [(x0 + x1) / 2, (y0 + y1) / 2,\n         (x1 - x0), (y1 - y0)]\n    return torch.stack(b, dim=-1)\n# modified from torchvision to also return the union\ndef box_iou(boxes1, boxes2):\n    area1 = box_area(boxes1)\n    area2 = box_area(boxes2)\n    lt = torch.max(boxes1[:, None, :2], boxes2[:, :2])  # [N,M,2]\n    rb = torch.min(boxes1[:, None, 2:], boxes2[:, 2:])  # [N,M,2]\n    wh = (rb - lt).clamp(min=0)  # [N,M,2]\n    inter = wh[:, :, 0] * wh[:, :, 1]  # [N,M]\n    union = area1[:, None] + area2 - inter\n    iou = inter / union\n    return iou, union\ndef generalized_box_iou(boxes1, boxes2):\n    \"\"\"",
+        "type": "code",
+        "location": "/mllm/utils/box_ops.py:1-41"
+    },
+    "731": {
+        "file_id": 56,
+        "content": "This code file contains utilities for bounding box manipulation and calculating Generalized Intersection over Union (GIoU). It defines functions for converting between center-size and corners representations of bounding boxes, and calculates the Intersection over Union (IoU) between two sets of bounding boxes. The generalized_box_iou function is a modified version of box_iou that also returns the union of bounding boxes.",
+        "type": "comment"
+    },
+    "732": {
+        "file_id": 56,
+        "content": "    Generalized IoU from https://giou.stanford.edu/\n    The boxes should be in [x0, y0, x1, y1] format\n    Returns a [N, M] pairwise matrix, where N = len(boxes1)\n    and M = len(boxes2)\n    \"\"\"\n    # degenerate boxes gives inf / nan results\n    # so do an early check\n    assert (boxes1[:, 2:] >= boxes1[:, :2]).all()\n    assert (boxes2[:, 2:] >= boxes2[:, :2]).all()\n    iou, union = box_iou(boxes1, boxes2)\n    lt = torch.min(boxes1[:, None, :2], boxes2[:, :2])\n    rb = torch.max(boxes1[:, None, 2:], boxes2[:, 2:])\n    wh = (rb - lt).clamp(min=0)  # [N,M,2]\n    area = wh[:, :, 0] * wh[:, :, 1]\n    return iou - (area - union) / area\ndef masks_to_boxes(masks):\n    \"\"\"Compute the bounding boxes around the provided masks\n    The masks should be in format [N, H, W] where N is the number of masks, (H, W) are the spatial dimensions.\n    Returns a [N, 4] tensors, with the boxes in xyxy format\n    \"\"\"\n    if masks.numel() == 0:\n        return torch.zeros((0, 4), device=masks.device)\n    h, w = masks.shape[-2:]\n    y = torch.arange(0, h, dtype=torch.float)",
+        "type": "code",
+        "location": "/mllm/utils/box_ops.py:42-76"
+    },
+    "733": {
+        "file_id": 56,
+        "content": "Code from line 41 to 75 in \"NExT-Chat/mllm/utils/box_ops.py\" contains two functions: \"generalized_iou\" and \"masks_to_boxes\". The generalized_iou function calculates the Intersection over Union (IoU) between two sets of bounding boxes, taking care of degenerate boxes that may lead to inf/nan results. It returns a pairwise matrix of IoU values. The masks_to_boxes function takes input masks and computes bounding boxes around them, returning a tensor with shape [N, 4] in xyxy format, where N is the number of masks.",
+        "type": "comment"
+    },
+    "734": {
+        "file_id": 56,
+        "content": "    x = torch.arange(0, w, dtype=torch.float)\n    y, x = torch.meshgrid(y, x)\n    x_mask = (masks * x.unsqueeze(0))\n    x_max = x_mask.flatten(1).max(-1)[0]\n    x_min = x_mask.masked_fill(~(masks.bool()), 1e8).flatten(1).min(-1)[0]\n    y_mask = (masks * y.unsqueeze(0))\n    y_max = y_mask.flatten(1).max(-1)[0]\n    y_min = y_mask.masked_fill(~(masks.bool()), 1e8).flatten(1).min(-1)[0]\n    return torch.stack([x_min, y_min, x_max, y_max], 1)\nfrom packaging import version\n# needed due to empty tensor bug in pytorch and torchvision 0.5\nimport torchvision\nif version.parse(torchvision.__version__) < version.parse('0.7'):\n    from torchvision.ops import _new_empty_tensor\n    from torchvision.ops.misc import _output_size\ndef interpolate(input, size=None, scale_factor=None, mode=\"nearest\", align_corners=None):\n    # type: (Tensor, Optional[List[int]], Optional[float], str, Optional[bool]) -> Tensor\n    \"\"\"\n    Equivalent to nn.functional.interpolate, but with support for empty batch sizes.\n    This will eventually be supported natively by PyTorch, and this",
+        "type": "code",
+        "location": "/mllm/utils/box_ops.py:77-103"
+    },
+    "735": {
+        "file_id": 56,
+        "content": "This code calculates the min and max x and y coordinates within a masked grid, then returns these values as a stacked tensor. The function is designed to work with empty batch sizes which may not be natively supported in some versions of PyTorch. It eventually aims to be replaced by native support in PyTorch.",
+        "type": "comment"
+    },
+    "736": {
+        "file_id": 56,
+        "content": "    class can go away.\n    \"\"\"\n    if version.parse(torchvision.__version__) < version.parse('0.7'):\n        if input.numel() > 0:\n            return torch.nn.functional.interpolate(\n                input, size, scale_factor, mode, align_corners\n            )\n        output_shape = _output_size(2, input, size, scale_factor)\n        output_shape = list(input.shape[:-2]) + list(output_shape)\n        return _new_empty_tensor(input, output_shape)\n    else:\n        return torchvision.ops.misc.interpolate(input, size, scale_factor, mode, align_corners)",
+        "type": "code",
+        "location": "/mllm/utils/box_ops.py:104-116"
+    },
+    "737": {
+        "file_id": 56,
+        "content": "This code checks the version of torchvision and performs interpolation on tensors. If the version is less than 0.7, it uses torch.nn.functional.interpolate, otherwise it uses torchvision.ops.misc.interpolate. If input has no elements, it returns an empty tensor with specified output shape.",
+        "type": "comment"
+    },
+    "738": {
+        "file_id": 57,
+        "content": "/mllm/utils/common.py",
+        "type": "filepath"
+    },
+    "739": {
+        "file_id": 57,
+        "content": "This code contains functions for parameter counting, sentence generation, and token resizing. It also defines a class for image handling with annotations and includes methods to update state and reset masks. The code appends \"<at> <boxes>\" to 'to_sub_strs', formats 'text' using substrings, handles exceptions, and returns modified 'text' and 'ret_boxes'.",
+        "type": "summary"
+    },
+    "740": {
+        "file_id": 57,
+        "content": "import copy\nfrom typing import List, Union, Dict\nimport os\nimport re, json\nimport gradio as gr\nimport numpy as np\nfrom PIL import ImageDraw\nfrom PIL import ImageFont\nfrom PIL import Image\nimport PIL.Image\nimport torch\nimport numpy as np\nimport torchvision.transforms.functional as F\nimport transformers\nfrom matplotlib import pyplot as plt\nfrom transformers import PreTrainedTokenizer\ndef print_trainable_params(model: torch.nn.Module) -> None:\n    trainable_params, all_param = 0, 0\n    for param in model.parameters():\n        num_params = param.numel()\n        # if using DS Zero 3 and the weights are initialized empty\n        if num_params == 0 and hasattr(param, \"ds_numel\"):\n            num_params = param.ds_numel\n        all_param += num_params\n        if param.requires_grad:\n            trainable_params += num_params\n    print(\"trainable params: {:d} || all params: {:d} || trainable%: {:.4f}\".format(\n        trainable_params, all_param, 100 * trainable_params / all_param))\ndef post_process_generate_ids(tokenizer: PreTrainedTokenizer, ids: torch.Tensor):",
+        "type": "code",
+        "location": "/mllm/utils/common.py:1-36"
+    },
+    "741": {
+        "file_id": 57,
+        "content": "Function `print_trainable_params` counts the number of trainable and total parameters in a given model, displaying them as well as the percentage of trainable ones. `post_process_generate_ids` processes generated token IDs using the provided tokenizer.",
+        "type": "comment"
+    },
+    "742": {
+        "file_id": 57,
+        "content": "    ids = copy.deepcopy(ids)  # do not modify origin preds and targets\n    ids[ids < 0] = tokenizer.pad_token_id\n    return ids\ndef decode_generate_ids(tokenizer: PreTrainedTokenizer, ids: torch.Tensor) -> Union[List[str], str]:\n    assert ids.ndim in [1, 2]\n    only_one_sentence = ids.ndim == 1\n    if only_one_sentence:\n        ids = ids.unsqueeze(0)\n    ids = post_process_generate_ids(tokenizer, ids)\n    res = tokenizer.batch_decode(ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)\n    if only_one_sentence:\n        return res[0]\n    return res\ndef show(imgs: Union[torch.Tensor, List[Union[torch.Tensor, PIL.Image.Image]]]):\n    if not isinstance(imgs, list):\n        imgs = [imgs]\n    fig, axs = plt.subplots(ncols=len(imgs), squeeze=False)\n    for i, img in enumerate(imgs):\n        if isinstance(img, torch.Tensor):\n            img = img.detach()\n            img = F.to_pil_image(img)\n        axs[0, i].imshow(np.asarray(img))\n        axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])",
+        "type": "code",
+        "location": "/mllm/utils/common.py:37-63"
+    },
+    "743": {
+        "file_id": 57,
+        "content": "This code contains several functions. The first function, \"copy_deepcopy\", makes a deep copy of the input list to avoid modifying the original. The second function, \"decode_generate_ids\", takes a tokenizer and tensor of ids as input, processes them for sentence generation, and returns either a single decoded sentence or a batch of them. Lastly, the \"show\" function plots a grid of images from a list, detaching and converting them to PIL images if needed.",
+        "type": "comment"
+    },
+    "744": {
+        "file_id": 57,
+        "content": "def draw_bounding_boxes(\n        image: Union[torch.Tensor, PIL.Image.Image],\n        boxes: Union[torch.Tensor, List, np.ndarray],\n        **kwargs,\n):\n    if isinstance(image, PIL.Image.Image):\n        from torchvision.transforms import PILToTensor\n        image = PILToTensor()(image)\n    assert isinstance(image, torch.Tensor), \"\"\n    if not isinstance(boxes, torch.Tensor):\n        boxes = torch.as_tensor(boxes)\n    assert isinstance(boxes, torch.Tensor)\n    from torchvision.utils import draw_bounding_boxes as _draw_bounding_boxes\n    return _draw_bounding_boxes(image, boxes, **kwargs)\n# https://github.com/huggingface/tokenizers/issues/247#issuecomment-675458087\ndef smart_tokenizer_and_embedding_resize(\n        special_tokens_dict: Dict,\n        tokenizer: transformers.PreTrainedTokenizer,\n        model: transformers.PreTrainedModel,\n):\n    \"\"\"Resize tokenizer and embedding.\n    Note: This is the unoptimized version that may make your embedding size not be divisible by 64.\n    \"\"\"\n    num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)",
+        "type": "code",
+        "location": "/mllm/utils/common.py:66-94"
+    },
+    "745": {
+        "file_id": 57,
+        "content": "The code defines a function `draw_bounding_boxes` that takes an image and boxes coordinates, converts the image to a tensor if necessary, checks the data types of inputs, and returns the image with bounding boxes drawn using another function from torchvision. The second code is a function `smart_tokenizer_and_embedding_resize` that adds special tokens to the tokenizer and resizes the embedding. It also mentions that there may be unoptimized versions which might not make the embedding size divisible by 64.",
+        "type": "comment"
+    },
+    "746": {
+        "file_id": 57,
+        "content": "    model.resize_token_embeddings(len(tokenizer))\n    if num_new_tokens > 0:\n        input_embeddings = model.get_input_embeddings().weight.data\n        output_embeddings = model.get_output_embeddings().weight.data\n        input_embeddings_avg = input_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)\n        output_embeddings_avg = output_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)\n        input_embeddings[-num_new_tokens:] = input_embeddings_avg\n        output_embeddings[-num_new_tokens:] = output_embeddings_avg\nclass ImageBoxState:\n    def __init__(self, draw_size=512):\n        if isinstance(draw_size, (float, int)):\n            draw_size = (draw_size, draw_size)\n        assert len(draw_size) == 2\n        self.size = draw_size\n        self.height, self.width = self.size[0], self.size[1]\n        self.reset_state()\n        self.cnt = 0\n    # noinspection PyAttributeOutsideInit\n    def reset_state(self):\n        self.image = None\n        self.boxes = []\n        self.masks = []\n    # noinspection PyAttributeOutsideInit",
+        "type": "code",
+        "location": "/mllm/utils/common.py:95-124"
+    },
+    "747": {
+        "file_id": 57,
+        "content": "The code snippet is a part of the NExT-Chat project and contains two separate functions. The first function resizes the token embeddings in a model based on the length of the provided tokenizer, while the second defines a class 'ImageBoxState' for image processing tasks, with methods to initialize its attributes and reset its state.",
+        "type": "comment"
+    },
+    "748": {
+        "file_id": 57,
+        "content": "    def reset_masks(self):\n        self.boxes = []\n        self.masks = []\n    # noinspection PyAttributeOutsideInit\n    def update_image(self, image):\n        if image != self.image:\n            # self.reset_state()\n            self.image = image\n    def update_mask(self, mask):\n        if len(self.masks) == 0:\n            last_mask = np.zeros_like(mask)\n        else:\n            last_mask = self.masks[-1]\n        if type(mask) == np.ndarray and mask.size > 1:\n            diff_mask = mask - last_mask\n        else:\n            diff_mask = np.zeros([])\n        # clear all of the strokes\n        if mask.sum() == 0:\n            self.reset_masks()\n            return\n        if (mask.astype(np.float32) - last_mask.astype(np.float32)).sum()<0:\n            self.boxes.pop()\n            self.masks.pop()\n            return\n        if diff_mask.sum() > 0:\n            # noinspection PyArgumentList\n            x1x2 = np.where(diff_mask.max(0) != 0)[0]\n            # noinspection PyArgumentList\n            y1y2 = np.where(diff_mask.max(1) != 0)[0]",
+        "type": "code",
+        "location": "/mllm/utils/common.py:125-160"
+    },
+    "749": {
+        "file_id": 57,
+        "content": "The code defines three methods in a class. The `reset_masks` method resets the `boxes` and `masks` lists. The `update_image` method compares the current image with the input image and resets the state if they are different. The `update_mask` method calculates the difference between the new mask and the last mask, handles cases of no changes or full clearing of the strokes, and finds the coordinates where there are differences in masks.",
+        "type": "comment"
+    },
+    "750": {
+        "file_id": 57,
+        "content": "            y1, y2 = y1y2.min(), y1y2.max()\n            x1, x2 = x1x2.min(), x1x2.max()\n            if (x2 - x1 > 5) and (y2 - y1 > 5):\n                self.masks.append(mask.copy())\n                self.boxes.append(tuple(map(int, (x1, y1, x2, y2))))\n    def update_box(self, box):\n        x1, y1, x2, y2 = box\n        x1, x2 = min(x1, x2), max(x1, x2)\n        y1, y2 = min(y1, y2), max(y1, y2)\n        self.boxes.append(tuple(map(int, (x1, y1, x2, y2))))\n    def to_model(self):\n        pass\n        # if self.image is None:\n        #     return {}\n        # image = expand2square(self.image)\n        # boxes = [box_xyxy_expand2square(box, w=self.image.width, h=self.image.height) for box in self.boxes]\n        # return {'image': image, 'boxes': boxes}\n    def draw_boxes(self):\n        assert self.image is not None\n        grounding_texts = [f'{bid}' for bid in range(len(self.boxes))]\n        def _draw(img, _boxes, texts):\n            assert img is not None\n            colors = [\"red\", \"blue\", \"green\", \"olive\", \"orange\", \"brown\", \"cyan\", \"purple\"]",
+        "type": "code",
+        "location": "/mllm/utils/common.py:161-186"
+    },
+    "751": {
+        "file_id": 57,
+        "content": "The code is part of a class responsible for handling image boxes and associated masks. The `update_box` method appends new box coordinates to the list of boxes, ensuring they are in the correct order. The `to_model` function prepares the data for conversion into a machine learning model input. The `draw_boxes` function draws the boxes on an image and associates each box with a specific color from a list.",
+        "type": "comment"
+    },
+    "752": {
+        "file_id": 57,
+        "content": "            _img_draw = ImageDraw.Draw(img)\n            font = ImageFont.truetype(os.path.join(os.path.dirname(__file__), 'assets/DejaVuSansMono.ttf'), size=18)\n            for bid, box in enumerate(_boxes):\n                _img_draw.rectangle((box[0], box[1], box[2], box[3]), outline=colors[bid % len(colors)], width=4)\n                anno_text = texts[bid]\n                _img_draw.rectangle((box[0], box[3] - int(font.size * 1.2), box[0] + int((len(anno_text) + 0.8) * font.size * 0.6), box[3]),\n                                    outline=colors[bid % len(colors)], fill=colors[bid % len(colors)], width=4)\n                _img_draw.text((box[0] + int(font.size * 0.2), box[3] - int(font.size * 1.2)), anno_text, font=font, fill=(255, 255, 255))\n            return img\n        out_draw = _draw(self.image, self.boxes, grounding_texts)\n        return out_draw\ndef bbox_draw(sketch_pad: dict, state: dict):\n    def binarize(x):\n        return (x != 0).astype('uint8') * 255\n    image = sketch_pad['image']\n    image = open_image(image)",
+        "type": "code",
+        "location": "/mllm/utils/common.py:187-205"
+    },
+    "753": {
+        "file_id": 57,
+        "content": "The code is drawing bounding boxes and annotated text on images. It uses ImageDraw to create the rectangles for each bounding box and text, using a given font size and color. The function returns the modified image with the annotations.",
+        "type": "comment"
+    },
+    "754": {
+        "file_id": 57,
+        "content": "    # global count\n    # count += 1\n    # np.save( f\"{count}.npy\", sketch_pad['mask'])\n    mask = sketch_pad['mask'].sum(-1) if sketch_pad['mask'].ndim == 3 else sketch_pad['mask']\n    mask = binarize(mask)\n    ibs = state[\"ibs\"]\n    ibs.update_image(image)\n    ibs.update_mask(mask)\n    out_draw = ibs.draw_boxes()\n    return out_draw, state\ndef open_image(image):\n    if type(image) == np.ndarray:\n        image = Image.fromarray(image)\n    elif type(image) == str:\n        image = Image.open(image).convert(\"RGB\")\n    return image\ndef parse_boxes(text):\n    def is_valid(lst):\n        return all([(type(x) == int) and (x >= 0) for x in lst]) and len(lst)>0\n    text = text.replace(\",]\", \"]\")\n    pat = re.compile(r\"\\[.*?\\]\")\n    matched_boxes = pat.findall(text)\n    ret_boxes = []\n    to_sub_strs = []\n    for box_str in matched_boxes:\n        try:\n            box_seq = json.loads(box_str)\n            if is_valid(box_seq):\n                ret_boxes.append(box_seq)\n                text = text.replace(box_str, \"{}\")\n                # to_sub_strs.append(\" \".join([\"<at> <boxes>\"]*len(box_seq)))",
+        "type": "code",
+        "location": "/mllm/utils/common.py:206-240"
+    },
+    "755": {
+        "file_id": 57,
+        "content": "The code defines a function to open an image, another function to parse boxes from a text string, and contains additional code for image processing. The functions check the type of the input image, convert it to appropriate format, and update the mask and box states. The parsed boxes are validated and appended to a list while replacing them in the original text string.",
+        "type": "comment"
+    },
+    "756": {
+        "file_id": 57,
+        "content": "                to_sub_strs.append(\"<at> <boxes>\")\n        except Exception as e:\n            pass\n    text = text.format(*to_sub_strs)\n    return text, ret_boxes",
+        "type": "code",
+        "location": "/mllm/utils/common.py:241-245"
+    },
+    "757": {
+        "file_id": 57,
+        "content": "This code snippet is a part of a larger function. It appends \"<at> <boxes>\" to the 'to_sub_strs' list and then formats the 'text' variable using those substrings. If an exception occurs, it is caught and ignored. Finally, it returns the modified 'text' and 'ret_boxes'.",
+        "type": "comment"
+    },
+    "758": {
+        "file_id": 58,
+        "content": "/requirements.txt",
+        "type": "filepath"
+    },
+    "759": {
+        "file_id": 58,
+        "content": "This is a requirements.txt file for a Python project, containing the necessary libraries and their respective versions required to run the codebase. These include transformers, gradio, datasets, mmengine, pycocotools, pycocoevalcap, sentencepiece, torch, torchaudio, and torchvision.",
+        "type": "summary"
+    },
+    "760": {
+        "file_id": 58,
+        "content": "transformers==4.31.0\ngradio==3.48.0\ndatasets\nmmengine\npycocotools\npycocoevalcap\nsentencepiece\ntorch\ntorchaudio\ntorchvision",
+        "type": "code",
+        "location": "/requirements.txt:1-10"
+    },
+    "761": {
+        "file_id": 58,
+        "content": "This is a requirements.txt file for a Python project, containing the necessary libraries and their respective versions required to run the codebase. These include transformers, gradio, datasets, mmengine, pycocotools, pycocoevalcap, sentencepiece, torch, torchaudio, and torchvision.",
+        "type": "comment"
+    },
+    "762": {
+        "file_id": 59,
+        "content": "/run_stage1.sh",
+        "type": "filepath"
+    },
+    "763": {
+        "file_id": 59,
+        "content": "This code launches a script using the \"accelerate\" tool to fine-tune a multimodal language model. The model is based on the \"vicuna-7b-v1.5\" checkpoint and utilizes an mm_projector for improved performance. The training will run for 2 epochs, with outputs saved in the \"./output/stage1\" directory.",
+        "type": "summary"
+    },
+    "764": {
+        "file_id": 59,
+        "content": "accelerate launch --num_processes 8 \\\n        --main_process_port 23786 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_stage1.py \\\n        --cfg-options model_args.model_name_or_path=/data/public/multimodal/multimodal_model_ckpts/vicuna-7b-v1.5 \\\n        model_args.mm_projector_depth=2 model_args.pretrained_mm_projector=/home/zhangao/model/llava/projector/vicuna1.5_7b/mm_projector.bin \\\n        --num_train_epochs 2 \\\n        --output_dir ./output/stage1",
+        "type": "code",
+        "location": "/run_stage1.sh:1-8"
+    },
+    "765": {
+        "file_id": 59,
+        "content": "This code launches a script using the \"accelerate\" tool to fine-tune a multimodal language model. The model is based on the \"vicuna-7b-v1.5\" checkpoint and utilizes an mm_projector for improved performance. The training will run for 2 epochs, with outputs saved in the \"./output/stage1\" directory.",
+        "type": "comment"
+    },
+    "766": {
+        "file_id": 60,
+        "content": "/run_stage2.sh",
+        "type": "filepath"
+    },
+    "767": {
+        "file_id": 60,
+        "content": "This code is launching an accelerate process with 8 processes to run the finetune.py script, using the nextchat_stage2.py configuration file. It sets specific options for the model, including the model's path and projector depth, and trains for 3 epochs while saving progress every 4950 steps. The output is saved in a directory named stage2.",
+        "type": "summary"
+    },
+    "768": {
+        "file_id": 60,
+        "content": "accelerate launch --num_processes 8 \\\n        --main_process_port 23786 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_stage2.py \\\n        --cfg-options model_args.model_name_or_path=$1 \\\n        model_args.mm_projector_depth=2 \\\n        --num_train_epochs 3 --save_steps 4950 \\\n        --output_dir ./output/stage2",
+        "type": "code",
+        "location": "/run_stage2.sh:1-8"
+    },
+    "769": {
+        "file_id": 60,
+        "content": "This code is launching an accelerate process with 8 processes to run the finetune.py script, using the nextchat_stage2.py configuration file. It sets specific options for the model, including the model's path and projector depth, and trains for 3 epochs while saving progress every 4950 steps. The output is saved in a directory named stage2.",
+        "type": "comment"
+    },
+    "770": {
+        "file_id": 61,
+        "content": "/run_stage3.sh",
+        "type": "filepath"
+    },
+    "771": {
+        "file_id": 61,
+        "content": "This script launches an 8-process acceleration, running 'finetune.py' with a config from 'nextchat_stage3.py'. It uses the provided argument as the model path, sets the projector depth to 2, trains for 3 epochs, saves every 5000 steps and outputs to './output/stage3' directory.",
+        "type": "summary"
+    },
+    "772": {
+        "file_id": 61,
+        "content": "accelerate launch --num_processes 8 \\\n        --main_process_port 23786 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_stage3.py \\\n        --cfg-options model_args.model_name_or_path=$1 \\\n        model_args.mm_projector_depth=2  \\\n        --num_train_epochs 3 --save_steps 5000 \\\n        --output_dir ./output/stage3",
+        "type": "code",
+        "location": "/run_stage3.sh:1-8"
+    },
+    "773": {
+        "file_id": 61,
+        "content": "This script launches an 8-process acceleration, running 'finetune.py' with a config from 'nextchat_stage3.py'. It uses the provided argument as the model path, sets the projector depth to 2, trains for 3 epochs, saves every 5000 steps and outputs to './output/stage3' directory.",
+        "type": "comment"
+    }
+}

@@ -1,0 +1,548 @@
+{
+    "500": {
+        "file_id": 47,
+        "content": "/mllm/models/nextchat/__init__.py",
+        "type": "filepath"
+    },
+    "501": {
+        "file_id": 47,
+        "content": "This line imports the NextChatForCausalLM class and NextChatConfig from the nextchat_base module, likely for further use in this codebase.",
+        "type": "summary"
+    },
+    "502": {
+        "file_id": 47,
+        "content": "from .nextchat_base import NextChatForCausalLM, NextChatConfig",
+        "type": "code",
+        "location": "/mllm/models/nextchat/__init__.py:1-1"
+    },
+    "503": {
+        "file_id": 47,
+        "content": "This line imports the NextChatForCausalLM class and NextChatConfig from the nextchat_base module, likely for further use in this codebase.",
+        "type": "comment"
+    },
+    "504": {
+        "file_id": 48,
+        "content": "/mllm/models/nextchat/nextchat_base.py",
+        "type": "filepath"
+    },
+    "505": {
+        "file_id": 48,
+        "content": "This code initializes vision and language models for AI chat, handling multimodal inputs, performing bounding box regression and object detection. It uses pretrained weights, encodes embeddings, and checks input shapes. The mean of the box_iou matrix is printed as output.",
+        "type": "summary"
+    },
+    "506": {
+        "file_id": 48,
+        "content": "import logging\nfrom typing import List, Optional, Tuple, Union\nimport torch\nimport torch.nn as nn\nimport transformers\nfrom transformers.models.bert.modeling_bert import BertEncoder, BertConfig\nfrom torch.nn import CrossEntropyLoss\nimport torch.nn.functional as F\nfrom mllm.utils.box_ops import generalized_box_iou, box_cxcywh_to_xyxy, box_xyxy_to_cxcywh, box_iou\nfrom transformers import LlamaConfig, LlamaModel, LlamaForCausalLM, CLIPVisionModel, CLIPImageProcessor, \\\n    CLIPVisionConfig\nfrom transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast\nDEFAULT_IMAGE_TOKEN = \"<image>\"\nDEFAULT_IMAGE_PATCH_TOKEN = \"<im_patch>\"\nDEFAULT_BOXES_TOKEN = \"<boxes>\"\nDEFAULT_AT_TOKEN = \"<at>\"\nDEFAULT_IM_START_TOKEN = \"<im_start>\"\nDEFAULT_IM_END_TOKEN = \"<im_end>\"\nclass NextChatConfig(LlamaConfig):\n    model_type = \"nextchat\"\n    sam_path = None\n    mm_depth = 2\nclass NextChatLlamaModel(LlamaModel):\n    config_class = NextChatConfig\n    def __init__(self, config: LlamaConfig, mm_vision_tower=None, mm_hidden_size=None):",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:1-34"
+    },
+    "507": {
+        "file_id": 48,
+        "content": "This code imports necessary libraries, defines a NextChatConfig class which inherits from LlamaConfig and extends it with sam_path and mm_depth parameters. It also defines a NextChatLlamaModel class that inherits from LlamaModel and includes additional parameters for vision tower and hidden size.",
+        "type": "comment"
+    },
+    "508": {
+        "file_id": 48,
+        "content": "        super(NextChatLlamaModel, self).__init__(config)\n        # if hasattr(config, \"mm_vision_tower\"):\n        #     vcfg = CLIPVisionConfig.from_pretrained(config.mm_vision_tower)\n        #     self.vision_tower = CLIPVisionModel(vcfg)\n        if hasattr(config, \"use_mm_proj\"):\n            self.mm_projector = self._build_mm_projector(config.mm_depth,\n                                                         config.mm_hidden_size, config.hidden_size) # nn.Linear(config.mm_hidden_size, config.hidden_size)\n    def initialize_vision_modules(self, vision_tower, mm_vision_select_layer, mm_depth=1,\n                                  pretrained_mm_projector=None, fsdp=None):\n        self.config.mm_vision_tower = vision_tower\n        image_processor = CLIPImageProcessor.from_pretrained(vision_tower)\n        if not hasattr(self, 'vision_tower'):\n            vision_tower = CLIPVisionModel.from_pretrained(vision_tower)\n        else:\n            vision_tower = self.vision_tower\n        vision_tower.requires_grad_(False)",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:35-54"
+    },
+    "509": {
+        "file_id": 48,
+        "content": "Initializing the vision modules of NextChatLlamaModel by setting vision tower, image processor, and checking if mm projector is present. If not, it builds an mm_projector layer with specified dimensions.",
+        "type": "comment"
+    },
+    "510": {
+        "file_id": 48,
+        "content": "        vision_tower = vision_tower.to(torch.float16) # TODO remove\n        self.vision_tower = [vision_tower] if fsdp is not None and len(fsdp)>0 else vision_tower\n        vision_config = vision_tower.config\n        num_patches = (vision_config.image_size // vision_config.patch_size) ** 2\n        self.config.use_mm_proj = True\n        self.config.mm_hidden_size = vision_config.hidden_size\n        self.config.mm_vision_select_layer = mm_vision_select_layer\n        if not hasattr(self, 'mm_projector'):\n            self.mm_projector = self._build_mm_projector(mm_depth,\n                                                         vision_config.hidden_size, self.config.hidden_size)\n            self.config.mm_depth=mm_depth\n            # self.mm_projector = nn.Linear(vision_config.hidden_size, self.config.hidden_size)\n        if pretrained_mm_projector is not None:\n            logging.info(f\"loading mm_projector from {pretrained_mm_projector}\")\n            mm_projector_weights = torch.load(pretrained_mm_projector, map_location='cpu')",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:55-72"
+    },
+    "511": {
+        "file_id": 48,
+        "content": "Initializing and configuring the mm_projector for the vision tower model based on input parameters, with potential loading of pretrained projector weights if provided.",
+        "type": "comment"
+    },
+    "512": {
+        "file_id": 48,
+        "content": "            info = self.mm_projector.load_state_dict({k.replace(\"model.mm_projector.\", \"\"): v for k, v in mm_projector_weights.items()})\n            logging.info(info)\n        return dict(\n            image_processor=image_processor,\n            image_token_len=num_patches,\n            vision_config=vision_config\n        )\n    def get_vision_tower(self):\n        vision_tower = self.vision_tower[0] if type(self.vision_tower) is list else self.vision_tower\n        return vision_tower\n    def _build_mm_projector(self, depth, in_size, out_size):\n        if depth is None or depth<=1:\n            return nn.Linear(in_size, out_size)\n        modules = [nn.Linear(in_size, out_size)]\n        for _ in range(1, depth):\n            modules.append(nn.GELU())\n            modules.append(nn.Linear(out_size, out_size))\n        return nn.Sequential(*modules)\n    def encode_input_embeds(self, input_ids, images, loc_embeds, orig_embeds_params, inputs_embeds=None):\n        if inputs_embeds is None:\n            inputs_embeds = self.embed_tokens(input_ids)",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:73-97"
+    },
+    "513": {
+        "file_id": 48,
+        "content": "Line 72-96: This code defines a method `load_state_dict()` in a class that loads state dictionary of the model's mm_projector, updates the state of the projector and returns image_processor, image_token_len (number of patches), and vision_config. It also includes methods to get the vision tower, build an MM projector with specified depth, and encode input embeddings from input ids, images, location embeds, and original embeds parameters.",
+        "type": "comment"
+    },
+    "514": {
+        "file_id": 48,
+        "content": "        vision_tower = getattr(self, 'vision_tower', None)\n        if vision_tower is not None and (input_ids.shape[1] != 1 or self.training) and images is not None:\n            # TODO: this is a modified multimodal LLM -- Haotian Liu\n            vision_tower = self.get_vision_tower()  # HACK: for FSDP\n            with torch.no_grad():\n                if type(images) is list:\n                    # variable length images\n                    image_features = []\n                    for image in images:\n                        image_forward_out = vision_tower(image.unsqueeze(0), output_hidden_states=True)\n                        select_hidden_state_layer = getattr(self.config, \"mm_vision_select_layer\", -1)\n                        select_hidden_state = image_forward_out.hidden_states[select_hidden_state_layer]\n                        image_feature = select_hidden_state[:, 1:]\n                        image_features.append(image_feature)\n                else:\n                    image_forward_outs = vision_tower(images, output_hidden_states=True)",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:99-114"
+    },
+    "515": {
+        "file_id": 48,
+        "content": "This code retrieves the vision tower from the model and checks if it's not None, input_ids shape is not 1 or training mode is active, and images are provided. If these conditions are met, it gets the vision tower, extracts image features using a for loop for variable length images, and selects the hidden state at a specific layer to create the image feature.",
+        "type": "comment"
+    },
+    "516": {
+        "file_id": 48,
+        "content": "                    select_hidden_state_layer = getattr(self.config, \"mm_vision_select_layer\", -1)\n                    select_hidden_state = image_forward_outs.hidden_states[select_hidden_state_layer]\n                    image_features = select_hidden_state[:, 1:]\n            if type(images) is list:\n                image_features = [self.mm_projector(image_feature)[0] for image_feature in image_features]\n            else:\n                image_features = self.mm_projector(image_features)\n            dummy_image_features = torch.zeros(256, 1024, device=inputs_embeds.device, dtype=inputs_embeds.dtype)\n            dummy_image_features = self.mm_projector(dummy_image_features)\n            new_input_embeds = []\n            cur_image_idx = 0\n            for cur_input_ids, cur_input_embeds in zip(input_ids, inputs_embeds):\n                if (cur_input_ids == vision_tower.config.im_patch_token).sum() == 0:\n                    # multimodal LLM, but the current sample is not multimodal\n                    cur_input_embeds = cur_input_embeds + (0. * dummy_image_features).sum()",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:115-130"
+    },
+    "517": {
+        "file_id": 48,
+        "content": "The code handles multimodal input in a language model by extracting image features and merging them with textual embeddings. It checks if the sample is multimodal, and if not, replaces the image features with dummy values before combining the inputs.",
+        "type": "comment"
+    },
+    "518": {
+        "file_id": 48,
+        "content": "                    new_input_embeds.append(cur_input_embeds)\n                    continue\n                if vision_tower.config.use_im_start_end:\n                    cur_image_features = image_features[cur_image_idx]\n                    num_patches = cur_image_features.shape[0]\n                    if (cur_input_ids == vision_tower.config.im_start_token).sum() != (\n                            cur_input_ids == vision_tower.config.im_end_token).sum():\n                        raise ValueError(\"The number of image start tokens and image end tokens should be the same.\")\n                    image_start_tokens = torch.where(cur_input_ids == vision_tower.config.im_start_token)[0]\n                    for image_start_token_pos in image_start_tokens:\n                        cur_image_features = image_features[cur_image_idx].to(device=cur_input_embeds.device)\n                        num_patches = cur_image_features.shape[0]\n                        if cur_input_ids[image_start_token_pos + num_patches + 1] != vision_tower.config.im_end_token:",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:131-143"
+    },
+    "519": {
+        "file_id": 48,
+        "content": "This code segment is for handling image start and end tokens in the input sequence. It checks if the number of start and end tokens is equal, raises a ValueError if not. Then, it iterates through the image start token positions, extracts the corresponding image features, and checks if the next token after the image is an image end token. If not, it raises a ValueError.",
+        "type": "comment"
+    },
+    "520": {
+        "file_id": 48,
+        "content": "                            raise ValueError(\"The image end token should follow the image start token.\")\n                        if orig_embeds_params is not None:\n                            cur_new_input_embeds = torch.cat((cur_input_embeds[:image_start_token_pos].detach(),\n                                                              cur_input_embeds[image_start_token_pos:image_start_token_pos + 1],\n                                                              cur_image_features, cur_input_embeds[\n                                                                                  image_start_token_pos + num_patches + 1:image_start_token_pos + num_patches + 2],\n                                                              cur_input_embeds[image_start_token_pos + num_patches + 2:].detach()), dim=0)\n                        else:\n                            cur_new_input_embeds = torch.cat((cur_input_embeds[:image_start_token_pos + 1], cur_image_features,\n                                                              cur_input_embeds[image_start_token_pos + num_patches + 1:]), dim=0)",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:144-153"
+    },
+    "521": {
+        "file_id": 48,
+        "content": "Raises a ValueError if the image end token is not following the start token. If orig_embeds_params is not None, combines input embeds and image features to create cur_new_input_embeds. Otherwise, only combines specific parts of cur_input_embeds with cur_image_features.",
+        "type": "comment"
+    },
+    "522": {
+        "file_id": 48,
+        "content": "                        cur_image_idx += 1\n                    new_input_embeds.append(cur_new_input_embeds)\n                else:\n                    cur_image_features = image_features[cur_image_idx]\n                    num_patches = cur_image_features.shape[0]\n                    if (cur_input_ids == vision_tower.config.im_patch_token).sum() != num_patches:\n                        raise ValueError(\"The number of image patch tokens should be the same as the number of image patches.\")\n                    masked_indices = torch.where(cur_input_ids == vision_tower.config.im_patch_token)[0]\n                    mask_index_start = masked_indices[0]\n                    if (masked_indices != torch.arange(mask_index_start, mask_index_start + num_patches, device=masked_indices.device,\n                                                       dtype=masked_indices.dtype)).any():\n                        raise ValueError(\"The image patch tokens should be consecutive.\")\n                    if orig_embeds_params is not None:",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:154-166"
+    },
+    "523": {
+        "file_id": 48,
+        "content": "This code block checks if the number of image patch tokens in the input matches the number of image patches and ensures they are consecutive. It raises a ValueError if these conditions are not met. The orig_embeds_params parameter is checked for existence, but no action is taken based on its value.",
+        "type": "comment"
+    },
+    "524": {
+        "file_id": 48,
+        "content": "                        cur_new_input_embeds = torch.cat((cur_input_embeds[:mask_index_start].detach(), cur_image_features,\n                                                          cur_input_embeds[mask_index_start + num_patches:].detach()), dim=0)\n                    else:\n                        cur_new_input_embeds = torch.cat(\n                            (cur_input_embeds[:mask_index_start], cur_image_features, cur_input_embeds[mask_index_start + num_patches:]),\n                            dim=0)\n                    new_input_embeds.append(cur_new_input_embeds)\n            inputs_embeds = torch.stack(new_input_embeds, dim=0)\n        # add the loc embeddings into the input_embeds\n        if (input_ids == vision_tower.config.box_token).sum() > 0 and loc_embeds is not None:\n            inputs_embeds[input_ids == vision_tower.config.box_token] = loc_embeds.type(inputs_embeds.dtype)\n        return inputs_embeds\n    def forward(\n            self,\n            input_ids: torch.LongTensor = None,\n            attention_mask: Optional[torch.Tensor] = None,",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:167-185"
+    },
+    "525": {
+        "file_id": 48,
+        "content": "This code concatenates input embeddings, image features, and (optionally) location embeddings into a single tensor, then returns the result. The function takes in `input_ids`, `attention_mask`, and other parameters for a model's forward pass.",
+        "type": "comment"
+    },
+    "526": {
+        "file_id": 48,
+        "content": "            past_key_values: Optional[List[torch.FloatTensor]] = None,\n            inputs_embeds: Optional[torch.FloatTensor] = None,\n            use_cache: Optional[bool] = None,\n            output_attentions: Optional[bool] = None,\n            output_hidden_states: Optional[bool] = None,\n            images: Optional[torch.FloatTensor] = None,\n            loc_embeds: Optional[torch.FloatTensor] = None,\n            return_dict: Optional[bool] = None,\n    ) -> Union[Tuple, BaseModelOutputWithPast]:\n        orig_embeds_params = getattr(self, 'orig_embeds_params', None)\n        # if orig_embeds_params is not None:\n        #     orig_embeds_params = orig_embeds_params[0]\n        #     with torch.no_grad():\n        #         self.get_input_embeddings().weight.data[:-2] = orig_embeds_params[:-2].data\n        if inputs_embeds is None:\n            inputs_embeds = self.encode_input_embeds(input_ids, images, loc_embeds, orig_embeds_params, inputs_embeds)\n        return super(NextChatLlamaModel, self).forward(\n            input_ids=None, attention_mask=attention_mask, past_key_values=past_key_values,",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:186-206"
+    },
+    "527": {
+        "file_id": 48,
+        "content": "This function defines a model for the NextChatLlama language generation. It takes various parameters such as past_key_values, inputs_embeds, use_cache, output_attentions, output_hidden_states, images, and loc_embeds. If no inputs_embeds are provided, it encodes the input embeddings using input_ids, images, loc_embeds, orig_embeds_params, and inputs_embeds. It then calls a superclass method to forward the computation.",
+        "type": "comment"
+    },
+    "528": {
+        "file_id": 48,
+        "content": "            inputs_embeds=inputs_embeds, use_cache=use_cache,\n            output_attentions=output_attentions, output_hidden_states=output_hidden_states,\n            return_dict=return_dict\n        )\nclass NextChatForCausalLM(LlamaForCausalLM):\n    config_class = NextChatConfig\n    def __init__(self, config: NextChatConfig):\n        super(LlamaForCausalLM, self).__init__(config)\n        self.model = NextChatLlamaModel(config)\n        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)\n        self.loc_encoder = nn.Sequential(\n            nn.Linear(4, config.hidden_size // 2),\n            nn.ReLU(),\n            nn.Linear(config.hidden_size // 2, config.hidden_size),\n        )\n        self.loc_decoder = nn.Sequential(\n            nn.Linear(config.hidden_size, config.hidden_size // 2),\n            nn.ReLU(),\n            nn.Linear(config.hidden_size // 2, 4)\n        )\n        # Initialize weights and apply final processing\n        self.post_init()\n    def forward(\n            self,\n            input_ids: torch.LongTensor = None,",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:207-238"
+    },
+    "529": {
+        "file_id": 48,
+        "content": "The code defines a class \"NextChatForCausalLM\" which inherits from \"LlamaForCausalLM\". It initializes an instance of \"NextChatLlamaModel\" with a specified configuration and adds a linear layer to transform the output to match the vocabulary size. The code also includes location encoder and decoder layers for some specific functionality, and calls the \"post_init\" method to initialize weights and apply final processing in the forward function.",
+        "type": "comment"
+    },
+    "530": {
+        "file_id": 48,
+        "content": "            attention_mask: Optional[torch.Tensor] = None,\n            past_key_values: Optional[List[torch.FloatTensor]] = None,\n            inputs_embeds: Optional[torch.FloatTensor] = None,\n            labels: Optional[torch.LongTensor] = None,\n            use_cache: Optional[bool] = None,\n            output_attentions: Optional[bool] = None,\n            output_hidden_states: Optional[bool] = None,\n            images: Optional[torch.FloatTensor] = None,\n            return_dict: Optional[bool] = None,\n            loc_inputs=None,\n            loc_targets=None,\n    ) -> Union[Tuple, CausalLMOutputWithPast]:\n        vision_tower = self.model.get_vision_tower()\n        if labels is not None:\n            labels[labels==vision_tower.config.box_token] = -100\n        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions\n        output_hidden_states = (\n            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states\n        )",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:239-258"
+    },
+    "531": {
+        "file_id": 48,
+        "content": "This code defines a method that takes input arguments and returns the output of a model. It initializes a vision tower from the model, handles labels by setting specific values to -100 if they match a box token, and sets output_attentions and output_hidden_states based on their provided values or default config settings. The method returns either a tuple or an object of CausalLMOutputWithPast depending on the input argument \"return_dict\".",
+        "type": "comment"
+    },
+    "532": {
+        "file_id": 48,
+        "content": "        return_dict = return_dict if return_dict is not None else self.config.use_return_dict\n        # TODO change to loc_inputs\n        loc_embeds = None\n        if loc_inputs is not None and len(loc_inputs) > 0:\n            loc_embeds = self.loc_encoder(loc_inputs)\n        # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)\n        outputs = self.model(\n            input_ids=input_ids,\n            attention_mask=attention_mask,\n            past_key_values=past_key_values,\n            inputs_embeds=inputs_embeds,\n            use_cache=use_cache,\n            output_attentions=output_attentions,\n            output_hidden_states=True,\n            return_dict=return_dict,\n            images=images,\n            loc_embeds=loc_embeds,\n        )\n        hidden_states = outputs[0]\n        logits = self.lm_head(hidden_states)\n        loss = None\n        if labels is not None:\n            # Shift so that tokens < n predict n\n            shift_logits = logits[:-1][..., :-1, :].contiguous()\n            shift_labels = labels[:-1][..., 1:].contiguous()",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:259-288"
+    },
+    "533": {
+        "file_id": 48,
+        "content": "This code snippet is part of the NextChat model. It takes input features, past key values, attention mask, and location embeds (if provided) as parameters to create outputs from a decoder. The hidden states are extracted from these outputs and passed through the language model head to obtain logits. If labels are given, it performs shift operations on logits and labels for loss calculation.",
+        "type": "comment"
+    },
+    "534": {
+        "file_id": 48,
+        "content": "            # x, y = shift_labels[shift_labels > 29871], shift_logits.argmax(-1)[shift_labels > 29871]\n            # print((x==y).sum()/len(x))\n            # Flatten the tokens\n            loss_fct = CrossEntropyLoss()\n            shift_logits = shift_logits.view(-1, self.config.vocab_size)\n            shift_labels = shift_labels.view(-1)\n            # Enable model/pipeline parallelism\n            shift_labels = shift_labels.to(shift_logits.device)\n            loss = loss_fct(shift_logits, shift_labels)\n        pred_locs = None\n        cycle_loss1= None\n        if loc_targets is not None and len(loc_targets)>0:\n            last_hidden_states = outputs.hidden_states[-1]\n            last_hidden_states = last_hidden_states.view(-1, last_hidden_states.size(-1))\n            loc_positions = ( (input_ids.flatten() == vision_tower.config.at_token)\n                             & (labels.flatten()>0) ).nonzero().flatten()\n            selected_hidden_states = last_hidden_states[loc_positions]\n            # pred_locs = self.loc_mlp(selected_hidden_states)",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:289-308"
+    },
+    "535": {
+        "file_id": 48,
+        "content": "Computing shift_logits and shift_labels using CrossEntropyLoss for classification task. The code flattens the tokens, enables parallelism by moving labels to device, and checks for loc_targets to compute cycle loss if present.",
+        "type": "comment"
+    },
+    "536": {
+        "file_id": 48,
+        "content": "            pred_locs = self.loc_decoder(selected_hidden_states)\n            # pred_locs = F.relu(pred_locs)\n            # loc_targets_cxcywh = box_xyxy_to_cxcywh(loc_targets)\n            if len(pred_locs) != len(loc_targets):\n                torch.save([input_ids, labels, attention_mask, loc_inputs, loc_targets], \"tmp.pth\")\n            box_loss = self.box_loss(pred_locs, loc_targets)\n            loss += box_loss\n            print(torch.diag(box_iou(pred_locs, loc_targets)[0]).mean())\n            # cycle loss\n            pred_output_embeds = self.loc_encoder(pred_locs)\n            cycle_loss1 = F.mse_loss(pred_output_embeds, selected_hidden_states, reduction=\"none\")\n            cycle_loss1 = self.masked_loss(cycle_loss1, 1)\n            loss += cycle_loss1\n            # print()\n        # cycle loss\n        if loc_embeds is not None:\n            pred_input_locs = self.loc_decoder(loc_embeds)\n            cycle_loss2 = F.l1_loss(pred_input_locs, loc_inputs, reduction=\"none\")\n            cycle_loss2 = self.masked_loss(cycle_loss2, 1)",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:309-329"
+    },
+    "537": {
+        "file_id": 48,
+        "content": "The code snippet defines a model for object detection. It calculates the box loss between predicted and actual locations, and computes the cycle loss by comparing encoder outputs with input embeddings. The masked_loss function is applied to cycle losses. If loc_embeds are not None, it also calculates another cycle loss between decoded loc embeddings and input locations. Finally, it prints the mean of the diagonal values from box_iou matrix.",
+        "type": "comment"
+    },
+    "538": {
+        "file_id": 48,
+        "content": "            loss += cycle_loss2\n        if not return_dict:\n            output = (logits,) + outputs[1:]\n            return (loss,) + output if loss is not None else output\n        return CausalLMOutputWithPast(\n            loss=loss,\n            logits=logits,\n            past_key_values=outputs.past_key_values,\n            hidden_states=outputs.hidden_states,\n            attentions=outputs.attentions,\n        )\n    def box_loss(self, src_boxes, target_boxes):\n        loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')\n        loss_bbox = self.masked_loss(loss_bbox, 1)\n        mask = (src_boxes[:, 2:] >= src_boxes[:, :2]).all(-1)\n        src_boxes = src_boxes[mask]\n        target_boxes = target_boxes[mask]\n        # if not mask.all():\n        #     print(len(mask)-mask.sum())\n        loss_giou = 1 - torch.diag(generalized_box_iou(\n            src_boxes,\n            target_boxes))\n        loss_giou = self.masked_loss(loss_giou, 1)\n        return loss_bbox*2 + loss_giou/5\n    def masked_loss(self, loss, n):",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:330-360"
+    },
+    "539": {
+        "file_id": 48,
+        "content": "This code defines a model that calculates loss functions for bounding box regression and object detection. The \"nextchat_base.py\" section updates the loss based on cycle_loss2, and returns the updated loss and other outputs depending on the return_dict parameter. The \"box_loss\" function computes the box loss by combining L1 loss and generalized intersection over union (GIoU) loss for bounding boxes. It also performs masked loss calculations, where only non-empty regions contribute to the total loss.",
+        "type": "comment"
+    },
+    "540": {
+        "file_id": 48,
+        "content": "        mask = torch.ones_like(loss)\n        mask[-n:] = 1e-10\n        loss = (loss*mask).sum()/(mask.sum())\n        return loss\n    def generate_rec(\n        self,\n        **kwargs,\n    ):\n        input_ids = kwargs[\"input_ids\"]\n        attention_mask = kwargs[\"attention_mask\"]\n        use_cache = kwargs[\"use_cache\"]\n        images = kwargs[\"images\"]\n        to_append = torch.tensor([673, 29901, 32003, 32004,   29889,     2], dtype=input_ids.dtype, device=input_ids.device)\n        input_ids = torch.cat([input_ids, to_append.repeat(len(input_ids), 1)], 1)\n        to_append_attn = torch.ones([len(attention_mask), len(to_append)], dtype=attention_mask.dtype, device=attention_mask.device)\n        attention_mask = torch.cat([attention_mask, to_append_attn], 1)\n        outputs = self.model(\n            input_ids=input_ids,\n            attention_mask=attention_mask,\n            past_key_values=None,\n            inputs_embeds=None,\n            use_cache=use_cache,\n            output_attentions=False,\n            output_hidden_states=True,",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:361-388"
+    },
+    "541": {
+        "file_id": 48,
+        "content": "This code defines a method to generate and append additional tokens for the input_ids and attention_mask, then passes it into a model for processing. This allows the model to process images along with text inputs by appending image-specific token ids to the input sequence. The output hidden states are also returned.",
+        "type": "comment"
+    },
+    "542": {
+        "file_id": 48,
+        "content": "            return_dict=True,\n            images=images.type(self.model.vision_tower.vision_model.embeddings.patch_embedding.weight.dtype)\n        )\n        last_hidden_states = outputs.hidden_states[-1]\n        last_hidden_states = last_hidden_states.view(-1, last_hidden_states.size(-1))\n        vision_tower = self.model.get_vision_tower()\n        loc_positions = (input_ids.flatten() == vision_tower.config.at_token).nonzero().flatten()\n        selected_hidden_states = last_hidden_states[loc_positions]\n        pred_locs = self.loc_decoder(selected_hidden_states)\n        pred_locs = pred_locs\n        return pred_locs\n    # def prepare_inputs_for_generation(\n    #         self, input_ids, loc_inputs=None, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs\n    # ):\n    #     if past_key_values:\n    #         loc_ids = None\n    #         if input_ids.size(-1)>=2:\n    #             loc_ids = input_ids[:, -2]\n    #         input_ids = input_ids[:, -1:]\n    #\n    #     # if `inputs_embeds` are passed, we only want to use them in the 1st generation step",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:389-411"
+    },
+    "543": {
+        "file_id": 48,
+        "content": "This code is part of a model for an AI chat system. It prepares inputs for the generation step, handling image and text inputs. It retrieves hidden states from previous layers, selects relevant information, predicts locations based on this data, and returns these predictions as the output.",
+        "type": "comment"
+    },
+    "544": {
+        "file_id": 48,
+        "content": "    #     if inputs_embeds is not None and past_key_values is None:\n    #         model_inputs = {\"inputs_embeds\": inputs_embeds}\n    #     else:\n    #         inputs_embeds = self.model.embed_tokens(input_ids)\n    #         hidden_states = kwargs.pop(\"hidden_states\", None)\n    #         vision_tower = self.model.get_vision_tower()\n    #         # need to incorporate location information\n    #         if loc_ids is not None and (loc_ids==vision_tower.config.at_token).any():\n    #             mask = loc_ids==vision_tower.config.at_token\n    #             loc_embeds = hidden_states[-1][mask][:, -1:, :]\n    #             loc_embeds = loc_embeds.type(inputs_embeds.dtype)\n    #             pred_locs = self.loc_decoder(loc_embeds)\n    #             loc_embeds = self.loc_encoder(pred_locs)\n    #             inputs_embeds[mask] = loc_embeds\n    #         model_inputs = {\"inputs_embeds\": inputs_embeds}\n    #\n    #     model_inputs.update(\n    #         {\n    #             \"past_key_values\": past_key_values,\n    #             \"use_cache\": kwargs.get(\"use_cache\"),",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:412-431"
+    },
+    "545": {
+        "file_id": 48,
+        "content": "This code segment is responsible for preparing model inputs for the NextChat base model. If `inputs_embeds` is not None and `past_key_values` is None, it creates a dictionary `model_inputs` containing only \"inputs_embeds\". Otherwise, it embeds tokens using the model's embedding layer, incorporates location information if `loc_ids` is not None and the token is an attention token, and updates the `inputs_embeds`. Finally, it updates `model_inputs` with both `past_key_values` and `use_cache` from the input kwargs.",
+        "type": "comment"
+    },
+    "546": {
+        "file_id": 48,
+        "content": "    #             \"attention_mask\": attention_mask,\n    #             \"images\": kwargs.get(\"images\", None),\n    #             \"loc_inputs\": loc_inputs,\n    #         }\n    #     )\n    #     return model_inputs\n    def prepare_inputs_for_generation(\n            self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs\n    ):\n        if past_key_values:\n            input_ids = input_ids[:, -1:]\n        # if `inputs_embeds` are passed, we only want to use them in the 1st generation step\n        if inputs_embeds is not None and past_key_values is None:\n            model_inputs = {\"inputs_embeds\": inputs_embeds}\n        else:\n            model_inputs = {\"input_ids\": input_ids}\n        model_inputs.update(\n            {\n                \"past_key_values\": past_key_values,\n                \"use_cache\": kwargs.get(\"use_cache\"),\n                \"attention_mask\": attention_mask,\n                \"images\": kwargs.get(\"images\", None),\n            }\n        )\n        return model_inputs\n    def _update_model_kwargs_for_generation(",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:432-461"
+    },
+    "547": {
+        "file_id": 48,
+        "content": "This function prepares the model inputs for generation. If `inputs_embeds` is provided and there are no past key values, it uses the `inputs_embeds`. Otherwise, it uses `input_ids`. It also updates the `model_inputs` with `past_key_values`, `use_cache`, `attention_mask`, and `images`.",
+        "type": "comment"
+    },
+    "548": {
+        "file_id": 48,
+        "content": "        self,\n        outputs,\n        model_kwargs,\n        is_encoder_decoder=False,\n        standardize_cache_format=False,\n    ):\n        model_kwargs = super(NextChatForCausalLM, self)._update_model_kwargs_for_generation(outputs,\n                                                                                model_kwargs,\n                                                                                is_encoder_decoder,\n                                                                                standardize_cache_format)\n        model_kwargs.update({\"hidden_states\": outputs.hidden_states})\n        return model_kwargs\n    def initialize_vision_tokenizer(self, mm_use_im_start_end, tokenizer, device,\n                                    tune_mm_mlp_adapter=False, pretrain_mm_mlp_adapter=None):\n        vision_tower = self.model.get_vision_tower()\n        vision_config = vision_tower.config\n        vision_config.use_im_start_end = mm_use_im_start_end\n        tokenizer.add_tokens([DEFAULT_IMAGE_PATCH_TOKEN], special_tokens=True)",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:462-480"
+    },
+    "549": {
+        "file_id": 48,
+        "content": "This code defines a function for initializing the vision tokenizer in a model. It sets up a vision tower, updates its configuration based on mm_use_im_start_end, and adds a default image patch token to the tokenizer. This is used in models that incorporate visual information.",
+        "type": "comment"
+    },
+    "550": {
+        "file_id": 48,
+        "content": "        self.resize_token_embeddings(len(tokenizer))\n        if mm_use_im_start_end:\n            num_new_tokens = tokenizer.add_tokens([DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN, DEFAULT_AT_TOKEN, DEFAULT_BOXES_TOKEN], special_tokens=True)\n            self.resize_token_embeddings(len(tokenizer))\n            vision_config.im_start_token, vision_config.im_end_token, vision_config.at_token, vision_config.box_token = tokenizer.convert_tokens_to_ids(\n                [DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN, DEFAULT_AT_TOKEN, DEFAULT_BOXES_TOKEN])\n            if num_new_tokens > 0:\n                input_embeddings = self.get_input_embeddings().weight.data\n                output_embeddings = self.get_output_embeddings().weight.data\n                input_embeddings_avg = input_embeddings[:-num_new_tokens].mean(\n                    dim=0, keepdim=True)\n                output_embeddings_avg = output_embeddings[:-num_new_tokens].mean(\n                    dim=0, keepdim=True)\n                input_embeddings[-num_new_tokens:] = input_embeddings_avg",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:481-498"
+    },
+    "551": {
+        "file_id": 48,
+        "content": "This code resizes the token embeddings to accommodate new tokens added by the tokenizer. It sets the vision config values for IM start, end, at, and box tokens. If new tokens are added, it calculates the average input and output embeddings for existing tokens and assigns these averages to the newly added tokens.",
+        "type": "comment"
+    },
+    "552": {
+        "file_id": 48,
+        "content": "                output_embeddings[-num_new_tokens:] = output_embeddings_avg\n            if tune_mm_mlp_adapter:\n                self.model.orig_embeds_params = [self.get_input_embeddings().weight.data.clone().to(device=device)]\n                for p in self.get_input_embeddings().parameters():\n                    p.requires_grad = True\n                for p in self.get_output_embeddings().parameters():\n                    p.requires_grad = False\n            if pretrain_mm_mlp_adapter:\n                mm_projector_weights = torch.load(pretrain_mm_mlp_adapter, map_location='cpu')\n                embed_tokens_weight = mm_projector_weights['model.embed_tokens.weight']\n                assert num_new_tokens == 3\n                if input_embeddings.shape == embed_tokens_weight.shape:\n                    input_embeddings[-num_new_tokens:] = embed_tokens_weight[-num_new_tokens:]\n                elif embed_tokens_weight.shape[0] == num_new_tokens:\n                    input_embeddings[-num_new_tokens:] = embed_tokens_weight",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:499-515"
+    },
+    "553": {
+        "file_id": 48,
+        "content": "The code is initializing input embeddings with pre-trained ones, if available. If not, it sets requires_grad to True for input embeddings and averages output embeddings for the new tokens. Also, it tunes MMMLP adapter parameters if specified.",
+        "type": "comment"
+    },
+    "554": {
+        "file_id": 48,
+        "content": "                else:\n                    raise ValueError(\n                        f\"Unexpected embed_tokens_weight shape. Pretrained: {embed_tokens_weight.shape}. Current: {input_embeddings.shape}. Numer of new tokens: {num_new_tokens}.\")\n        vision_config.im_patch_token = tokenizer.convert_tokens_to_ids([DEFAULT_IMAGE_PATCH_TOKEN])[0]",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_base.py:516-520"
+    },
+    "555": {
+        "file_id": 48,
+        "content": "This code segment checks the shape of embed_tokens_weight, input_embeddings and counts the number of new tokens. If the shapes are unexpected, it raises a ValueError with information about the unexpected shapes and number of new tokens. Then, it assigns the ID for the default image patch token to vision_config's im_patch_token variable.",
+        "type": "comment"
+    },
+    "556": {
+        "file_id": 49,
+        "content": "/mllm/models/nextchat/nextchat_seg.py",
+        "type": "filepath"
+    },
+    "557": {
+        "file_id": 49,
+        "content": "This code creates a language modeling class that utilizes 'vision_tower' for data processing, segmentation loss generation, and includes methods for model outputs, generation, and vision tower detection. It prepares chat model inputs with location info in the vision tower layer, handles input preprocessing using `inputs_embeds` and checks `past_key_values`.",
+        "type": "summary"
+    },
+    "558": {
+        "file_id": 49,
+        "content": "from typing import Optional, List, Union, Tuple\nimport torch\nfrom torch import nn\nfrom torch.nn import CrossEntropyLoss\nfrom transformers.modeling_outputs import CausalLMOutputWithPast\nfrom transformers import LlamaConfig\nfrom mllm.models.nextchat.nextchat_base import NextChatForCausalLM, NextChatConfig\nfrom mllm.models.sam.modeling_sam import SamForLMSeg\nfrom mllm.models.sam.sam_loss import SamLoss\nclass NextChatForSegLM(NextChatForCausalLM):\n    def __init__(self, config: NextChatConfig):\n        super(NextChatForSegLM, self).__init__(config)\n        self.sam = SamForLMSeg(\"vit_h\", config.sam_path)\n        self.sam_loss = SamLoss()\n        self.sam_prompt_dim = self.sam.model.prompt_encoder.embed_dim\n        self.seg_prompt_mlp = nn.Sequential(\n            nn.Linear(self.model.config.hidden_size, self.model.config.hidden_size),\n            nn.ReLU(),\n            nn.Linear(self.model.config.hidden_size, self.sam_prompt_dim*4)\n            )\n    def forward(\n            self,\n            input_ids: torch.LongTensor = None,",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_seg.py:1-28"
+    },
+    "559": {
+        "file_id": 49,
+        "content": "This code defines a class `NextChatForSegLM` that inherits from `NextChatForCausalLM`. It initializes an instance of `SamForLMSeg`, `SamLoss` and sets the prompt MLP. The class overrides the forward function to integrate the `SamModel` and `SamLoss` for segmented language modeling.",
+        "type": "comment"
+    },
+    "560": {
+        "file_id": 49,
+        "content": "            attention_mask: Optional[torch.Tensor] = None,\n            past_key_values: Optional[List[torch.FloatTensor]] = None,\n            inputs_embeds: Optional[torch.FloatTensor] = None,\n            labels: Optional[torch.LongTensor] = None,\n            use_cache: Optional[bool] = None,\n            output_attentions: Optional[bool] = None,\n            output_hidden_states: Optional[bool] = None,\n            images: Optional[torch.FloatTensor] = None,\n            images_sam: Optional[torch.FloatTensor] = None,\n            masks_sam: Optional[torch.Tensor] = None,\n            return_dict: Optional[bool] = None,\n            loc_inputs=None,\n            loc_targets=None, # mask\n            **kwargs,\n    ) -> Union[Tuple, CausalLMOutputWithPast]:\n        vision_tower = self.model.get_vision_tower()\n        if labels is not None:\n            labels[labels==vision_tower.config.box_token] = -100\n        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_seg.py:29-48"
+    },
+    "561": {
+        "file_id": 49,
+        "content": "This code defines a function that takes various inputs and returns output from a model. It uses the 'vision_tower' to process data, handles labels by setting specific values to -100, and allows for optional control of attention mask, past key values, input embeddings, etc. The output_attentions parameter determines whether or not to return attention weights.",
+        "type": "comment"
+    },
+    "562": {
+        "file_id": 49,
+        "content": "        output_hidden_states = (\n            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states\n        )\n        return_dict = return_dict if return_dict is not None else self.config.use_return_dict\n        # TODO change to loc_inputs\n        loc_embeds = None\n        if loc_inputs is not None and len(loc_inputs) > 0:\n            loc_embeds = self.loc_encoder(loc_inputs)\n        # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)\n        outputs = self.model(\n            input_ids=input_ids,\n            attention_mask=attention_mask,\n            past_key_values=past_key_values,\n            inputs_embeds=inputs_embeds,\n            use_cache=use_cache,\n            output_attentions=output_attentions,\n            output_hidden_states=True,\n            return_dict=return_dict,\n            images=images,\n            loc_embeds=loc_embeds,\n        )\n        hidden_states = outputs[0]\n        logits = self.lm_head(hidden_states)\n        loss = 0",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_seg.py:49-76"
+    },
+    "563": {
+        "file_id": 49,
+        "content": "Code snippet from NExT-Chat/mllm/models/nextchat/nextchat_seg.py, lines 48-75, is responsible for processing input data in a transformer model, generating hidden states and logits for language modeling, and handling optional location embeddings. It returns the hidden states, computes loss based on the model's configuration, and allows for customization of return values and usage of cache.",
+        "type": "comment"
+    },
+    "564": {
+        "file_id": 49,
+        "content": "        if loc_targets is not None and len(loc_targets) > 0:\n            last_hidden_states = outputs.hidden_states[-1]\n            last_hidden_states = last_hidden_states.view(-1, last_hidden_states.size(-1))\n            loc_positions = ( (input_ids.flatten() == vision_tower.config.at_token)\n                             & (labels.flatten()>0) ).nonzero().flatten()\n            selected_hidden_states = last_hidden_states[loc_positions]\n            pred_locs = self.loc_decoder(selected_hidden_states)*1024\n            prompt_states = self.seg_prompt_mlp(selected_hidden_states)\n            prompt_states = prompt_states.view(prompt_states.size(0), -1, self.sam_prompt_dim)\n            pred_masks, iou_predictions = self.sam(images_sam, prompt_states, pred_locs)\n            seg_loss = self.sam_loss(pred_masks, masks_sam, iou_predictions, last_hidden_states.device)\n            loss += seg_loss\n        return CausalLMOutputWithPast(\n            loss=loss,\n            logits=logits,\n            past_key_values=outputs.past_key_values,",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_seg.py:77-94"
+    },
+    "565": {
+        "file_id": 49,
+        "content": "This code checks if the `loc_targets` is not empty, then selects the last hidden states from the model's outputs, flattens them, and extracts the positions where the input IDs match a specified token and labels are greater than zero. These selected hidden states are used to predict locations with a decoder, prompt states are generated using an MLP layer, and the predicted masks and IOU values are computed by a SAM module. The segmentation loss is added to the overall loss, which is returned along with logits and past key values.",
+        "type": "comment"
+    },
+    "566": {
+        "file_id": 49,
+        "content": "            hidden_states=outputs.hidden_states,\n            attentions=outputs.attentions,\n        )\n    def generate(\n        self,\n        inputs= None,\n        generation_config= None,\n        logits_processor= None,\n        stopping_criteria= None,\n        prefix_allowed_tokens_fn= None,\n        synced_gpus= None,\n        streamer= None,\n        images_sam= None,\n        **kwargs,\n    ):\n        dtype = self.model.vision_tower.vision_model.embeddings.patch_embedding.weight.dtype\n        input_ids = kwargs[\"input_ids\"]\n        attention_mask = kwargs[\"attention_mask\"]\n        images = kwargs[\"images\"]\n        loc_inputs = kwargs.pop(\"loc_inputs\", \"None\")\n        loc_embeds = None\n        if loc_inputs is not None and len(loc_inputs)>0:\n            loc_embeds = self.loc_encoder(loc_inputs.type(dtype))\n            vision_tower = self.model.get_vision_tower()\n            num = (input_ids==vision_tower.config.box_token).sum()\n            loc_embeds = loc_embeds[:num]\n            if num == 0:\n                loc_embeds = None",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_seg.py:95-123"
+    },
+    "567": {
+        "file_id": 49,
+        "content": "This code defines a class with methods for model outputs, generation, and potentially image processing. The model takes input_ids, attention_mask, and images as arguments. It also has a loc_encoder that may embed location inputs if provided. If box tokens are found in the input_ids, it uses the loc_embeds from the loc_encoder to represent those locations. If no box tokens are found, loc_embeds is set to None. The dtype of the input is determined from the model's vision tower and patch embedding weight.",
+        "type": "comment"
+    },
+    "568": {
+        "file_id": 49,
+        "content": "        orig_embeds_params = getattr(self.model, 'orig_embeds_params', None)\n        input_embeds = self.model.encode_input_embeds(input_ids, images.type(dtype), loc_embeds,\n                                                      orig_embeds_params, inputs_embeds=None)\n        outputs = super(NextChatForCausalLM, self).generate(\n            inputs_embeds=input_embeds,\n            attention_mask=attention_mask,\n            max_new_tokens=kwargs.pop(\"max_new_tokens\", 1024),\n            # stopping_criteria=stopping_criteria,\n            num_beams=kwargs.pop(\"num_beams\", 5),\n            min_length=1,\n            top_p=kwargs.get(\"top_p\", 0.8),\n            repetition_penalty=1.0,\n            length_penalty=1,\n            temperature=kwargs.get(\"temperature\", 0.75),\n            return_dict_in_generate=True,\n            output_hidden_states=True,\n            output_scores=True,\n            top_k=kwargs.get(\"top_k\", 5),\n        )\n        loc_hidden_states = []\n        if hasattr(outputs, \"beam_indices\"): # beam size > 1",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_seg.py:125-147"
+    },
+    "569": {
+        "file_id": 49,
+        "content": "This code snippet is from the NextChat model, which is a language model for open-ended text generation. It encodes input embeddings and generates new tokens using various parameters like beam size, maximum length, and temperature. The generated outputs include hidden states and scores.",
+        "type": "comment"
+    },
+    "570": {
+        "file_id": 49,
+        "content": "            vision_tower = self.model.get_vision_tower()\n            loc_ids = (outputs.sequences == vision_tower.config.at_token).nonzero()\n            hidden_states = outputs.hidden_states\n            beam_indices = outputs.beam_indices\n            for lid in loc_ids:\n                # assign to box\n                outputs.sequences[lid[0], lid[1]+1] = vision_tower.config.box_token\n                beam_idx = beam_indices[lid[0], lid[1]]\n                loc_h = hidden_states[lid[1]][-1][beam_idx]\n                loc_hidden_states.append(loc_h.squeeze())\n            if len(loc_hidden_states) > 0:\n                loc_hidden_states = torch.stack(loc_hidden_states)\n        else: # beam_size == 1\n            vision_tower = self.model.get_vision_tower()\n            loc_ids = (outputs.sequences == vision_tower.config.at_token).nonzero()\n            hidden_states = outputs.hidden_states\n            for lid in loc_ids:\n                outputs.sequences[lid[0], lid[1]+1] = vision_tower.config.box_token\n                loc_h = hidden_states[lid[1]][-1]",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_seg.py:148-167"
+    },
+    "571": {
+        "file_id": 49,
+        "content": "This code checks if the model output contains a specific token indicating the presence of a vision tower. If found, it assigns box tokens to sequences and extracts hidden states related to those locations. It handles both beam search scenarios (beam_size > 1 or beam_size == 1).",
+        "type": "comment"
+    },
+    "572": {
+        "file_id": 49,
+        "content": "                loc_hidden_states.append(loc_h.squeeze())\n            if len(loc_hidden_states) > 0:\n                loc_hidden_states = torch.stack(loc_hidden_states)\n        pred_masks, pred_locs, iou_predictions = None, None, None\n        if len(loc_hidden_states)>0:\n            loc_hidden_states = loc_hidden_states.type(dtype)\n            pred_locs = self.loc_decoder(loc_hidden_states)\n            prompt_states = self.seg_prompt_mlp(loc_hidden_states)\n            prompt_states = prompt_states.view(prompt_states.size(0), -1, self.sam_prompt_dim)\n            dtype = self.sam.model.image_encoder.patch_embed.proj.weight.dtype\n            if images_sam is not None:\n                pred_masks, iou_predictions = self.sam(images_sam.type(dtype), prompt_states, boxes=pred_locs.type(dtype)*1024)\n        return outputs.sequences, pred_masks, iou_predictions, pred_locs\n    def prepare_inputs_for_generation(\n            self, input_ids, images_sam=None, loc_inputs=None,\n            past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_seg.py:168-186"
+    },
+    "573": {
+        "file_id": 49,
+        "content": "This function prepares inputs for the generation process in a model. It takes input_ids, images_sam (optional), loc_inputs (optional), past_key_values (optional), attention_mask (optional) and additional keyword arguments. The function checks if images_sam and loc_inputs are not empty then it generates predictions by calling self.loc_decoder to predict the location decoding. It also passes these predicted locations, prompt states, and images through the model's self.sam to generate masks and IOU (Intersection over Union) predictions. The function returns sequences, pred_masks, iou_predictions, and pred_locs.",
+        "type": "comment"
+    },
+    "574": {
+        "file_id": 49,
+        "content": "    ):\n        if past_key_values:\n            loc_ids = None\n            if input_ids.size(-1)>=2:\n                loc_ids = input_ids[:, -2]\n            input_ids = input_ids[:, -1:]\n        # if `inputs_embeds` are passed, we only want to use them in the 1st generation step\n        if inputs_embeds is not None and past_key_values is None:\n            model_inputs = {\"inputs_embeds\": inputs_embeds}\n        else:\n            inputs_embeds = self.model.embed_tokens(input_ids)\n            hidden_states = kwargs.pop(\"hidden_states\", None)\n            vision_tower = self.model.get_vision_tower()\n            # need to incorporate location information\n            if loc_ids is not None and (loc_ids==vision_tower.config.at_token).any():\n                mask = loc_ids==vision_tower.config.at_token\n                loc_embeds = hidden_states[-1][mask][:, -1:, :]\n                loc_embeds = loc_embeds.type(inputs_embeds.dtype)\n                pred_locs = self.loc_decoder(loc_embeds)\n                loc_embeds = self.loc_encoder(pred_locs)",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_seg.py:187-208"
+    },
+    "575": {
+        "file_id": 49,
+        "content": "This code is part of the NextChat model implementation. It handles input preprocessing for text generation and incorporates location information in the vision tower layer. If `inputs_embeds` are passed, it uses them only in the 1st generation step. It also checks if `past_key_values` is not None and sets `loc_ids` accordingly before generating embeddings with `self.model.embed_tokens()`.",
+        "type": "comment"
+    },
+    "576": {
+        "file_id": 49,
+        "content": "                inputs_embeds[mask] = loc_embeds\n            model_inputs = {\"inputs_embeds\": inputs_embeds}\n            # model_inputs = {\"input_ids\": input_ids}\n        model_inputs.update(\n            {\n                \"past_key_values\": past_key_values,\n                \"use_cache\": kwargs.get(\"use_cache\"),\n                \"attention_mask\": attention_mask,\n                \"images\": kwargs.get(\"images\", None),\n                \"loc_inputs\": loc_inputs,\n                \"images_sam\": images_sam,\n            }\n        )\n        return model_inputs",
+        "type": "code",
+        "location": "/mllm/models/nextchat/nextchat_seg.py:209-223"
+    },
+    "577": {
+        "file_id": 49,
+        "content": "The code prepares the model inputs for a chat model, including embedding locations, setting past key values, using cache if specified, applying attention mask, handling images (optional), and including location inputs.",
+        "type": "comment"
+    },
+    "578": {
+        "file_id": 50,
+        "content": "/mllm/models/sam/modeling_sam.py",
+        "type": "filepath"
+    },
+    "579": {
+        "file_id": 50,
+        "content": "The code creates a Transformer model for image attending with Multi-Head Attention, window-based attention, and optional relative position embeddings. It utilizes 'Sam' model and 'PositionEmbeddingRandom' to create embeddings for points, boxes, and masks. The model performs mask token generation, upscaling, and IOU prediction heads through hypernetworks MLPs and multiple masks using embedding point prompts in image encoding.",
+        "type": "summary"
+    },
+    "580": {
+        "file_id": 50,
+        "content": "# Copyright (c) Meta Platforms, Inc. and affiliates.\n# All rights reserved.\n# This source code is licensed under the license found in the\n# LICENSE file in the root directory of this source tree.\nimport torch\nimport torch.nn as nn\nimport torch.nn.functional as F\nfrom typing import Optional, Tuple, Type, List, Any, Dict\nfrom torch import Tensor, nn\nimport numpy as np\nimport math\nclass MLPBlock(nn.Module):\n    def __init__(\n        self,\n        embedding_dim: int,\n        mlp_dim: int,\n        act: Type[nn.Module] = nn.GELU,\n    ) -> None:\n        super().__init__()\n        self.lin1 = nn.Linear(embedding_dim, mlp_dim)\n        self.lin2 = nn.Linear(mlp_dim, embedding_dim)\n        self.act = act()\n    def forward(self, x: torch.Tensor) -> torch.Tensor:\n        return self.lin2(self.act(self.lin1(x)))\n# From https://github.com/facebookresearch/detectron2/blob/main/detectron2/layers/batch_norm.py # noqa\n# Itself from https://github.com/facebookresearch/ConvNeXt/blob/d1fa8f6fef0a165b27399986cc2bdacc92777e40/models/convnext.py#L119  # noqa",
+        "type": "code",
+        "location": "/mllm/models/sam/modeling_sam.py:1-35"
+    },
+    "581": {
+        "file_id": 50,
+        "content": "This code defines a module for a Multilayer Perceptron (MLP) block with input and output embedding dimensions, and an activation function. It consists of two linear layers and applies the specified activation function to the output of the first layer before passing it through the second layer.",
+        "type": "comment"
+    },
+    "582": {
+        "file_id": 50,
+        "content": "class LayerNorm2d(nn.Module):\n    def __init__(self, num_channels: int, eps: float = 1e-6) -> None:\n        super().__init__()\n        self.weight = nn.Parameter(torch.ones(num_channels))\n        self.bias = nn.Parameter(torch.zeros(num_channels))\n        self.eps = eps\n    def forward(self, x: torch.Tensor) -> torch.Tensor:\n        u = x.mean(1, keepdim=True)\n        s = (x - u).pow(2).mean(1, keepdim=True)\n        x = (x - u) / torch.sqrt(s + self.eps)\n        x = self.weight[:, None, None] * x + self.bias[:, None, None]\n        return x\n# Copyright (c) Meta Platforms, Inc. and affiliates.\n# All rights reserved.\n# This source code is licensed under the license found in the\n# LICENSE file in the root directory of this source tree.\nclass TwoWayTransformer(nn.Module):\n    def __init__(\n        self,\n        depth: int,\n        embedding_dim: int,\n        num_heads: int,\n        mlp_dim: int,\n        activation: Type[nn.Module] = nn.ReLU,\n        attention_downsample_rate: int = 2,\n    ) -> None:\n        \"\"\"\n        A transformer decoder that attends to an input image using",
+        "type": "code",
+        "location": "/mllm/models/sam/modeling_sam.py:36-70"
+    },
+    "583": {
+        "file_id": 50,
+        "content": "The LayerNorm2d class is a layer normalization operation applied to 2D tensors, with adjustable weight and bias parameters. The TwoWayTransformer class is a transformer decoder for attending to an input image, featuring configurable depth, embedding dimension, number of heads, MLP dimension, activation function (default ReLU), and attention downsample rate.",
+        "type": "comment"
+    },
+    "584": {
+        "file_id": 50,
+        "content": "        queries whose positional embedding is supplied.\n        Args:\n          depth (int): number of layers in the transformer\n          embedding_dim (int): the channel dimension for the input embeddings\n          num_heads (int): the number of heads for multihead attention. Must\n            divide embedding_dim\n          mlp_dim (int): the channel dimension internal to the MLP block\n          activation (nn.Module): the activation to use in the MLP block\n        \"\"\"\n        super().__init__()\n        self.depth = depth\n        self.embedding_dim = embedding_dim\n        self.num_heads = num_heads\n        self.mlp_dim = mlp_dim\n        self.layers = nn.ModuleList()\n        for i in range(depth):\n            self.layers.append(\n                TwoWayAttentionBlock(\n                    embedding_dim=embedding_dim,\n                    num_heads=num_heads,\n                    mlp_dim=mlp_dim,\n                    activation=activation,\n                    attention_downsample_rate=attention_downsample_rate,\n                    skip_first_layer_pe=(i == 0),",
+        "type": "code",
+        "location": "/mllm/models/sam/modeling_sam.py:71-96"
+    },
+    "585": {
+        "file_id": 50,
+        "content": "This code defines a Transformer model with a specific architecture, including the number of layers (depth), embedding dimension, number of attention heads, and MLP block dimensions. The `TwoWayAttentionBlock` class is used for each layer, which may or may not require positional embedding depending on the current layer's position.",
+        "type": "comment"
+    },
+    "586": {
+        "file_id": 50,
+        "content": "                )\n            )\n        self.final_attn_token_to_image = Attention1(\n            embedding_dim, num_heads, downsample_rate=attention_downsample_rate\n        )\n        self.norm_final_attn = nn.LayerNorm(embedding_dim)\n    def forward(\n        self,\n        image_embedding: Tensor,\n        image_pe: Tensor,\n        point_embedding: Tensor,\n    ) -> Tuple[Tensor, Tensor]:\n        \"\"\"\n        Args:\n          image_embedding (torch.Tensor): image to attend to. Should be shape\n            B x embedding_dim x h x w for any h and w.\n          image_pe (torch.Tensor): the positional encoding to add to the image. Must\n            have the same shape as image_embedding.\n          point_embedding (torch.Tensor): the embedding to add to the query points.\n            Must have shape B x N_points x embedding_dim for any N_points.\n        Returns:\n          torch.Tensor: the processed point_embedding\n          torch.Tensor: the processed image_embedding\n        \"\"\"\n        # BxCxHxW -> BxHWxC == B x N_image_tokens x C",
+        "type": "code",
+        "location": "/mllm/models/sam/modeling_sam.py:97-124"
+    },
+    "587": {
+        "file_id": 50,
+        "content": "This code defines a class for a model that takes in an image embedding, image positional encoding, and point embeddings as input. It applies attention to the image and then processes both the point and image embeddings using layer normalization. The resulting processed point_embedding and image_embedding are returned.",
+        "type": "comment"
+    },
+    "588": {
+        "file_id": 50,
+        "content": "        bs, c, h, w = image_embedding.shape\n        image_embedding = image_embedding.flatten(2).permute(0, 2, 1)\n        image_pe = image_pe.flatten(2).permute(0, 2, 1)\n        # Prepare queries\n        queries = point_embedding\n        keys = image_embedding\n        # Apply transformer blocks and final layernorm\n        for layer in self.layers:\n            queries, keys = layer(\n                queries=queries,\n                keys=keys,\n                query_pe=point_embedding,\n                key_pe=image_pe,\n            )\n        # Apply the final attention layer from the points to the image\n        q = queries + point_embedding\n        k = keys + image_pe\n        attn_out = self.final_attn_token_to_image(q=q, k=k, v=keys)\n        queries = queries + attn_out\n        queries = self.norm_final_attn(queries)\n        return queries, keys\nclass TwoWayAttentionBlock(nn.Module):\n    def __init__(\n        self,\n        embedding_dim: int,\n        num_heads: int,\n        mlp_dim: int = 2048,\n        activation: Type[nn.Module] = nn.ReLU,",
+        "type": "code",
+        "location": "/mllm/models/sam/modeling_sam.py:125-158"
+    },
+    "589": {
+        "file_id": 50,
+        "content": "The code defines a TwoWayAttentionBlock class that applies transformer blocks to perform attention between points and images. It flattens the input, prepares queries and keys, iterates over the defined layers in the block, performs attention from points to image, adds the result back to queries and normalizes them before returning.",
+        "type": "comment"
+    },
+    "590": {
+        "file_id": 50,
+        "content": "        attention_downsample_rate: int = 2,\n        skip_first_layer_pe: bool = False,\n    ) -> None:\n        \"\"\"\n        A transformer block with four layers: (1) self-attention of sparse\n        inputs, (2) cross attention of sparse inputs to dense inputs, (3) mlp\n        block on sparse inputs, and (4) cross attention of dense inputs to sparse\n        inputs.\n        Arguments:\n          embedding_dim (int): the channel dimension of the embeddings\n          num_heads (int): the number of heads in the attention layers\n          mlp_dim (int): the hidden dimension of the mlp block\n          activation (nn.Module): the activation of the mlp block\n          skip_first_layer_pe (bool): skip the PE on the first layer\n        \"\"\"\n        super().__init__()\n        self.self_attn = Attention1(embedding_dim, num_heads)\n        self.norm1 = nn.LayerNorm(embedding_dim)\n        self.cross_attn_token_to_image = Attention1(\n            embedding_dim, num_heads, downsample_rate=attention_downsample_rate\n        )\n        self.norm2 = nn.LayerNorm(embedding_dim)",
+        "type": "code",
+        "location": "/mllm/models/sam/modeling_sam.py:159-182"
+    },
+    "591": {
+        "file_id": 50,
+        "content": "This code defines a transformer block with four layers: (1) self-attention on sparse inputs, (2) cross attention from sparse to dense inputs, (3) mlp block on sparse inputs, and (4) cross attention from dense to sparse inputs. It takes in arguments for embedding dimension, number of heads, MLP dimension, activation function, and whether to skip the first layer PE.",
+        "type": "comment"
+    },
+    "592": {
+        "file_id": 50,
+        "content": "        self.mlp = MLPBlock(embedding_dim, mlp_dim, activation)\n        self.norm3 = nn.LayerNorm(embedding_dim)\n        self.norm4 = nn.LayerNorm(embedding_dim)\n        self.cross_attn_image_to_token = Attention1(\n            embedding_dim, num_heads, downsample_rate=attention_downsample_rate\n        )\n        self.skip_first_layer_pe = skip_first_layer_pe\n    def forward(\n        self, queries: Tensor, keys: Tensor, query_pe: Tensor, key_pe: Tensor\n    ) -> Tuple[Tensor, Tensor]:\n        # Self attention block\n        if self.skip_first_layer_pe:\n            queries = self.self_attn(q=queries, k=queries, v=queries)\n        else:\n            q = queries + query_pe\n            attn_out = self.self_attn(q=q, k=q, v=queries)\n            queries = queries + attn_out\n        queries = self.norm1(queries)\n        # Cross attention block, tokens attending to image embedding\n        q = queries + query_pe\n        k = keys + key_pe\n        attn_out = self.cross_attn_token_to_image(q=q, k=k, v=keys)\n        queries = queries + attn_out",
+        "type": "code",
+        "location": "/mllm/models/sam/modeling_sam.py:184-210"
+    },
+    "593": {
+        "file_id": 50,
+        "content": "The code initializes a model with several layers, including an MLPBlock, two LayerNorm layers, and an Attention1 layer. The forward method performs self-attention on the queries, followed by cross-attention between queries and keys. If skip_first_layer_pe is true, it skips the first layer's PE addition; otherwise, it adds query position embeddings and performs attention before adding the result back to the queries. The queries are then passed through LayerNorm layers. This code seems to be part of a transformer model for processing tokens and image embeddings.",
+        "type": "comment"
+    },
+    "594": {
+        "file_id": 50,
+        "content": "        queries = self.norm2(queries)\n        # MLP block\n        mlp_out = self.mlp(queries)\n        queries = queries + mlp_out\n        queries = self.norm3(queries)\n        # Cross attention block, image embedding attending to tokens\n        q = queries + query_pe\n        k = keys + key_pe\n        attn_out = self.cross_attn_image_to_token(q=k, k=q, v=queries)\n        keys = keys + attn_out\n        keys = self.norm4(keys)\n        return queries, keys\nclass Attention1(nn.Module):\n    \"\"\"\n    An attention layer that allows for downscaling the size of the embedding\n    after projection to queries, keys, and values.\n    \"\"\"\n    def __init__(\n        self,\n        embedding_dim: int,\n        num_heads: int,\n        downsample_rate: int = 1,\n    ) -> None:\n        super().__init__()\n        self.embedding_dim = embedding_dim\n        self.internal_dim = embedding_dim // downsample_rate\n        self.num_heads = num_heads\n        assert self.internal_dim % num_heads == 0, \"num_heads must divide embedding_dim.\"\n        self.q_proj = nn.Linear(embedding_dim, self.internal_dim)",
+        "type": "code",
+        "location": "/mllm/models/sam/modeling_sam.py:211-246"
+    },
+    "595": {
+        "file_id": 50,
+        "content": "The code defines an attention layer that downscales the size of the embedding after projection to queries, keys, and values. It initializes the attention layer with given dimensions, number of heads, and a downsample rate. The internal_dim is calculated by dividing the embedding_dim by the downsample_rate. It also includes a linear projection (q_proj) for the queries.",
+        "type": "comment"
+    },
+    "596": {
+        "file_id": 50,
+        "content": "        self.k_proj = nn.Linear(embedding_dim, self.internal_dim)\n        self.v_proj = nn.Linear(embedding_dim, self.internal_dim)\n        self.out_proj = nn.Linear(self.internal_dim, embedding_dim)\n    def _separate_heads(self, x: Tensor, num_heads: int) -> Tensor:\n        b, n, c = x.shape\n        x = x.reshape(b, n, num_heads, c // num_heads)\n        return x.transpose(1, 2)  # B x N_heads x N_tokens x C_per_head\n    def _recombine_heads(self, x: Tensor) -> Tensor:\n        b, n_heads, n_tokens, c_per_head = x.shape\n        x = x.transpose(1, 2)\n        return x.reshape(b, n_tokens, n_heads * c_per_head)  # B x N_tokens x C\n    def forward(self, q: Tensor, k: Tensor, v: Tensor) -> Tensor:\n        # Input projections\n        q = self.q_proj(q)\n        k = self.k_proj(k)\n        v = self.v_proj(v)\n        # Separate into heads\n        q = self._separate_heads(q, self.num_heads)\n        k = self._separate_heads(k, self.num_heads)\n        v = self._separate_heads(v, self.num_heads)\n        # Attention\n        _, _, _, c_per_head = q.shape",
+        "type": "code",
+        "location": "/mllm/models/sam/modeling_sam.py:247-273"
+    },
+    "597": {
+        "file_id": 50,
+        "content": "This code initializes two linear layers for key and value projections, as well as an output projection layer. The `_separate_heads` function reshapes the input tensor into multiple heads, while the `_recombine_heads` function reverses this process. In the forward pass, it performs input projections, separates inputs into heads, and computes attention before recombining and returning the result.",
+        "type": "comment"
+    },
+    "598": {
+        "file_id": 50,
+        "content": "        attn = q @ k.permute(0, 1, 3, 2)  # B x N_heads x N_tokens x N_tokens\n        attn = attn / math.sqrt(c_per_head)\n        attn = torch.softmax(attn, dim=-1)\n        # Get output\n        out = attn @ v\n        out = self._recombine_heads(out)\n        out = self.out_proj(out)\n        return out\n# Copyright (c) Meta Platforms, Inc. and affiliates.\n# All rights reserved.\n# This source code is licensed under the license found in the\n# LICENSE file in the root directory of this source tree.\n# This class and its supporting functions below lightly adapted from the ViTDet backbone available at: https://github.com/facebookresearch/detectron2/blob/main/detectron2/modeling/backbone/vit.py # noqa\nclass ImageEncoderViT(nn.Module):\n    def __init__(\n        self,\n        img_size: int = 1024,\n        patch_size: int = 16,\n        in_chans: int = 3,\n        embed_dim: int = 768,\n        depth: int = 12,\n        num_heads: int = 12,\n        mlp_ratio: float = 4.0,\n        out_chans: int = 256,\n        qkv_bias: bool = True,",
+        "type": "code",
+        "location": "/mllm/models/sam/modeling_sam.py:274-306"
+    },
+    "599": {
+        "file_id": 50,
+        "content": "This code snippet defines a class called `ImageEncoderViT` which inherits from the `nn.Module` class in PyTorch. This module is used to encode an image using the Vision Transformer architecture. It takes in parameters such as image size, patch size, number of input channels, embedding dimension, depth, number of heads, mlp ratio, and output channels. The code contains a method that performs multi-head attention on patches extracted from the input image and returns the encoded output.",
+        "type": "comment"
+    }
+}

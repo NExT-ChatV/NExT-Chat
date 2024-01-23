@@ -1,0 +1,10 @@
+{
+    "summary": "This code initializes a model for NextChat Stage 1, setting the base, training arguments, and model arguments. The model will train for 2 epochs and output directory is set to \"./exp/{{fileBasenameNoExtension}}\". The tokenize_kwargs in conv_args truncates input text sequences at 4096 tokens.",
+    "details": [
+        {
+            "comment": "This code initializes a model for NextChat Stage 1, setting the base, training arguments, and model arguments. The model will train for 2 epochs and output directory is set to \"./exp/{{fileBasenameNoExtension}}\". The tokenize_kwargs in conv_args truncates input text sequences at 4096 tokens.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/config/nextchat_stage1.py\":0-12",
+            "content": "_base_ = ['_base_/dataset/nextchat_stage1.py', '_base_/model/nextchat.py', '_base_/train/nextchat_fsdp.py']\ntraining_args = dict(\n    num_train_epochs=2,\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n)\nmodel_args = dict(\n    conv_args=dict(\n        tokenize_kwargs=dict(truncation_size=4096),\n    ),\n    model_name_or_path=None,\n)"
+        }
+    ]
+}
