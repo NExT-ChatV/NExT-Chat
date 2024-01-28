@@ -12,7 +12,7 @@
         "1": {
             "filepath": "/README.md",
             "entry_id": 6,
-            "language_id": "plain-text"
+            "language_id": "markdown"
         },
         "2": {
             "filepath": "/config/_base_/model/nextchat.py",
