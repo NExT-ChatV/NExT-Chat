@@ -331,7 +331,7 @@ class NextChatInference(object):
         if len(cur_boxes_seq) > 0:
             text = cur_input_text
             boxes_seq = cur_boxes_seq
-
+        self.model.eval()
         response, boxes, masks, ret_img = model_predict(self.model, self.model_args,
                                           self.tokenizer, self.preprocessor,
                                           image, text,
