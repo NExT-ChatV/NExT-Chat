@@ -1,0 +1,10 @@
+{
+    "summary": "This is a requirements.txt file for a Python project, containing the necessary libraries and their respective versions required to run the codebase. These include transformers, gradio, datasets, mmengine, pycocotools, pycocoevalcap, sentencepiece, torch, torchaudio, and torchvision.",
+    "details": [
+        {
+            "comment": "This is a requirements.txt file for a Python project, containing the necessary libraries and their respective versions required to run the codebase. These include transformers, gradio, datasets, mmengine, pycocotools, pycocoevalcap, sentencepiece, torch, torchaudio, and torchvision.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/requirements.txt\":0-9",
+            "content": "transformers==4.31.0\ngradio==3.48.0\ndatasets\nmmengine\npycocotools\npycocoevalcap\nsentencepiece\ntorch\ntorchaudio\ntorchvision"
+        }
+    ]
+}

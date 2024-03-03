@@ -1,0 +1,15 @@
+{
+    "summary": "This code configures a NextChat model with specific parameters and creates a NextChat model object with optional settings for token IDs.",
+    "details": [
+        {
+            "comment": "This code configures a NextChat model with specific parameters including the checkpoint config, model name, image vision tower, sample path, pre-trained MM projector, max length, depth of the projector, freezing settings, data processing configuration, and processing function arguments.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/config/_base_/model/nextchat.py\":0-41",
+            "content": "model_args = dict(\n    type='nextchat',\n    version='v1',\n    # checkpoint config\n    cache_dir=None,\n    model_name_or_path=None,\n    vision_tower=r'openai/clip-vit-large-patch14-336',\n    sam_path='/path/to/sam_vit_h_4b8939.pth',\n    pretrain_mm_mlp_adapter=None,\n    pretrained_mm_projector=None,\n    # model config\n    mm_vision_select_layer=-2,\n    model_max_length=2048,\n    mm_projector_depth=1,\n    # finetune config\n    freeze_backbone=False,\n    tune_mm_mlp_adapter=False,\n    freeze_mm_mlp_adapter=False,\n    # data process config\n    sep_image_conv_front=False,\n    image_token_len=576,\n    mm_use_im_start_end=True,\n    target_processor=dict(\n        boxes=dict(type='PlainBoxFormatter'),\n    ),\n    process_func_args=dict(\n        conv=dict(type='ChatConvProcess'),\n        target=dict(type='BoxFormatProcess'),\n        text=dict(type='ChatTextProcess'),\n        image=dict(type='ChatImageProcessor'),\n    ),\n    conv_args=dict(\n        conv_template='vicuna_v1.1',\n        transforms=dict(type='Expand2square'),\n        tokenize_kwargs=dict(truncation_size=2048),"
+        },
+        {
+            "comment": "This code creates a model object, NextChat, with optional parameters for setting pad_token_id, bos_token_id, and eos_token_id. These options allow specifying the token IDs for padding, beginning of sequence, and end of sequence respectively during model instantiation.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/config/_base_/model/nextchat.py\":42-47",
+            "content": "    ),\n    gen_kwargs_set_pad_token_id=True,\n    gen_kwargs_set_bos_token_id=True,\n    gen_kwargs_set_eos_token_id=True,\n)"
+        }
+    ]
+}

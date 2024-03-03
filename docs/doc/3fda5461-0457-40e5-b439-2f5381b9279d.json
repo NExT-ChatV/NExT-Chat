@@ -1,0 +1,10 @@
+{
+    "summary": "This code is for building and loading pre-trained models in the NExT-Chat framework. It defines a function called \"load_pretrained\" that takes model arguments and training arguments as input and returns the loaded model and its associated preprocessor. The function checks the \"type\" argument to determine which specific pre-trained model to load: either \"nextchat\", \"nextchat_seg\", or an unsupported type. If an unsupported type is given, it raises an assertion error.",
+    "details": [
+        {
+            "comment": "This code is for building and loading pre-trained models in the NExT-Chat framework. It defines a function called \"load_pretrained\" that takes model arguments and training arguments as input and returns the loaded model and its associated preprocessor. The function checks the \"type\" argument to determine which specific pre-trained model to load: either \"nextchat\", \"nextchat_seg\", or an unsupported type. If an unsupported type is given, it raises an assertion error.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/models/builder/builder.py\":0-16",
+            "content": "from typing import Dict, Any, Tuple\nfrom torch import nn\nfrom .build_nextchat import load_pretrained_nextchat, load_pretrained_nextchat_base\nPREPROCESSOR = Dict[str, Any]\n# TODO: Registry\ndef load_pretrained(model_args, training_args) -> Tuple[nn.Module, PREPROCESSOR]:\n    type_ = model_args.type\n    if type_ == 'nextchat':\n        return load_pretrained_nextchat_base(model_args, training_args)\n    elif type_ == \"nextchat_seg\":\n        return load_pretrained_nextchat(model_args, training_args)\n    else:\n        assert False"
+        }
+    ]
+}

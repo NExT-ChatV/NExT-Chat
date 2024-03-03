@@ -1,0 +1,10 @@
+{
+    "summary": "The code imports the \"prepare_args\" function from the \"config\" module within the current package. This function likely prepares arguments for further use in the program.",
+    "details": [
+        {
+            "comment": "The code imports the \"prepare_args\" function from the \"config\" module within the current package. This function likely prepares arguments for further use in the program.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/config/__init__.py\":0-0",
+            "content": "from .config import prepare_args"
+        }
+    ]
+}

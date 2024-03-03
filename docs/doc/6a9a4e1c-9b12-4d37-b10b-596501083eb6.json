@@ -1,0 +1,10 @@
+{
+    "summary": "This line imports the NextChatForCausalLM class and NextChatConfig from the nextchat_base module, likely for further use in this codebase.",
+    "details": [
+        {
+            "comment": "This line imports the NextChatForCausalLM class and NextChatConfig from the nextchat_base module, likely for further use in this codebase.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/models/nextchat/__init__.py\":0-0",
+            "content": "from .nextchat_base import NextChatForCausalLM, NextChatConfig"
+        }
+    ]
+}

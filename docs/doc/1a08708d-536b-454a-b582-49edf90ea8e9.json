@@ -1,0 +1,10 @@
+{
+    "summary": "The code snippet defines a dictionary named \"training_args\" for model training. It includes various configuration options such as the output directory, dataset handling, logging, evaluation, prediction settings, batch sizes, and data loader workers count. The arguments are set to their default values, which can be overridden by derived configs.",
+    "details": [
+        {
+            "comment": "The code snippet defines a dictionary named \"training_args\" for model training. It includes various configuration options such as the output directory, dataset handling, logging, evaluation, prediction settings, batch sizes, and data loader workers count. The arguments are set to their default values, which can be overridden by derived configs.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/config/_base_/train/eval.py\":0-21",
+            "content": "training_args = dict(\n    # run\n    output_dir=None,  # required. must be filled by derived configs.\n    overwrite_output_dir=False,\n    report_to='none',\n    seed=42,\n    # datasets\n    remove_unused_columns=False,\n    # logging\n    logging_steps=1,\n    # eval and predict\n    do_eval=True,\n    do_predict=True,\n    bf16=True,\n    bf16_full_eval=True,\n    predict_with_generate=True,\n    per_device_eval_batch_size=16,\n    # dataloader_num_workers=4,\n)"
+        }
+    ]
+}

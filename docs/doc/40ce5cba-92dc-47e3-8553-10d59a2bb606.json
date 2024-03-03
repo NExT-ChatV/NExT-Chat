@@ -1,0 +1,10 @@
+{
+    "summary": "This function, `prepare_trainer_collator`, takes model arguments and a preprocessor dictionary as input. It determines the trainer class based on the model type and creates a data collator function using Seq2Seq2DataCollatorWithImage. The function returns a tuple containing the trainer class and a dictionary of train and eval data collators for inference modes False (train) and True (eval).",
+    "details": [
+        {
+            "comment": "This function, `prepare_trainer_collator`, takes model arguments and a preprocessor dictionary as input. It determines the trainer class based on the model type and creates a data collator function using Seq2Seq2DataCollatorWithImage. The function returns a tuple containing the trainer class and a dictionary of train and eval data collators for inference modes False (train) and True (eval).",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/engine/builder.py\":0-29",
+            "content": "from functools import partial\nfrom typing import Tuple, Dict, Any, Type\nfrom transformers.trainer import DataCollator\nfrom .nextchat import NextChatTrainer\nfrom .base_engine import TrainerForMMLLM, Seq2Seq2DataCollatorWithImage\nTYPE2TRAINER = {\n    'nextchat': NextChatTrainer,\n}\ndef prepare_trainer_collator(\n        model_args,\n        preprocessor: Dict[str, Any],\n        collator_kwargs: Dict[str, Any]\n) -> Tuple[Type[TrainerForMMLLM], Dict[str, DataCollator]]:\n    type_ = model_args.type\n    trainer_cls = TYPE2TRAINER.get(type_, NextChatTrainer)\n    data_collator_func = partial(\n        Seq2Seq2DataCollatorWithImage,\n        preprocessor=preprocessor,\n        **collator_kwargs,\n    )\n    data_collator_dict = {\n        \"train_collator\": data_collator_func(inference_mode=False),\n        \"eval_collator\": data_collator_func(inference_mode=True),\n    }\n    return trainer_cls, data_collator_dict"
+        }
+    ]
+}

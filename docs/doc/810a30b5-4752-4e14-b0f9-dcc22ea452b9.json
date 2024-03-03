@@ -1,0 +1,10 @@
+{
+    "summary": "Imports necessary modules from base_engine, nextchat, and builder for initializing trainer classes and collator.",
+    "details": [
+        {
+            "comment": "Imports necessary modules from base_engine, nextchat, and builder for initializing trainer classes and collator.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/engine/__init__.py\":0-2",
+            "content": "from .base_engine import TrainerForMMLLM, TrainerDifferentCollatorMixin\nfrom .nextchat import NextChatTrainer\nfrom .builder import prepare_trainer_collator"
+        }
+    ]
+}

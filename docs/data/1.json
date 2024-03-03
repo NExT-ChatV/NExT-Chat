@@ -1,0 +1,546 @@
+{
+    "100": {
+        "file_id": 18,
+        "content": "    parser.add_argument('config', help='train config file path')\n    parser.add_argument(\n        '--cfg-options',\n        nargs='+',\n        action=DictAction,\n        help='override some settings in the used config, the key-value pair '\n             'in xxx=yyy format will be merged into config file. If the value to '\n             'be overwritten is a list, it should be like key=\"[a,b]\" or key=a,b '\n             'It also allows nested list/tuple values, e.g. key=\"[(a,b),(c,d)]\" '\n             'Note that the quotation marks are necessary and that no white space '\n             'is allowed.')\n    hf_parser = HfArgumentParser((Seq2SeqTrainingArguments,))\n    hf_parser, required = block_required_error(hf_parser)\n    args, unknown_args = parser.parse_known_args(args)\n    known_hf_args, unknown_args = hf_parser.parse_known_args(unknown_args)\n    if unknown_args:\n        raise ValueError(f\"Some specified arguments are not used \"\n                         f\"by the ArgumentParser or HfArgumentParser\\n: {unknown_args}\")",
+        "type": "code",
+        "location": "/mllm/config/config.py:33-52"
+    },
+    "101": {
+        "file_id": 18,
+        "content": "This code is parsing known arguments using ArgumentParser and HfArgumentParser, allowing for the overriding of settings in a config file with key-value pairs in the format \"xxx=yyy\". It also handles any unused specified arguments.",
+        "type": "comment"
+    },
+    "102": {
+        "file_id": 18,
+        "content": "    # load 'cfg' and 'training_args' from file and cli\n    cfg = Config.fromfile(args.config)\n    if args.cfg_options is not None:\n        cfg.merge_from_dict(args.cfg_options)\n    training_args = cfg.training_args\n    training_args.update(vars(known_hf_args))\n    # check training_args require\n    req_but_not_assign = [item for item in required if item not in training_args]\n    if req_but_not_assign:\n        raise ValueError(f\"Requires {req_but_not_assign} but not assign.\")\n    # update cfg.training_args\n    cfg.training_args = training_args\n    # initialize and return\n    training_args = Seq2SeqTrainingArguments(**training_args)\n    training_args = check_output_dir(training_args)\n    # logging\n    if is_main_process(training_args.local_rank):\n        to_logging_cfg = Config()\n        to_logging_cfg.model_args = cfg.model_args\n        to_logging_cfg.data_args = cfg.data_args\n        to_logging_cfg.training_args = cfg.training_args\n        logger.info(to_logging_cfg.pretty_text)\n    # setup logger\n    if training_args.should_log:",
+        "type": "code",
+        "location": "/mllm/config/config.py:54-82"
+    },
+    "103": {
+        "file_id": 18,
+        "content": "Code reads configuration file and command line arguments, merges them into training_args, checks for missing required values, updates cfg.training_args, initializes Seq2SeqTrainingArguments, checks output directory, logs config info if local_rank is 0, and sets up logger if should_log is True.",
+        "type": "comment"
+    },
+    "104": {
+        "file_id": 18,
+        "content": "        # The default of training_args.log_level is passive, so we set log level at info here to have that default.\n        transformers.logging.set_verbosity_info()\n    log_level = training_args.get_process_log_level()\n    logger.setLevel(log_level)\n    datasets.utils.logging.set_verbosity(log_level)\n    transformers.logging.set_verbosity(log_level)\n    transformers.logging.enable_default_handler()\n    transformers.logging.enable_explicit_format()\n    # setup_print_for_distributed(is_main_process(training_args))\n    # Log on each process the small summary:\n    logger.info(f\"Training/evaluation parameters {training_args}\")\n    logger.warning(\n        f\"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}\\n\"\n        + f\"  distributed training: {bool(training_args.local_rank != -1)}, fp16 training: {training_args.fp16}\"\n    )\n    # Set seed before initializing model.\n    set_seed(training_args.seed)\n    return cfg, training_args\ndef block_required_error(hf_parser: HfArgumentParser) -> Tuple[HfArgumentParser, List]:",
+        "type": "code",
+        "location": "/mllm/config/config.py:83-106"
+    },
+    "105": {
+        "file_id": 18,
+        "content": "The code sets the log level to info, sets the logger's logging level, enables default handlers and explicit format, and logs training/evaluation parameters along with distributed training details before setting a seed.",
+        "type": "comment"
+    },
+    "106": {
+        "file_id": 18,
+        "content": "    required = []\n    # noinspection PyProtectedMember\n    for action in hf_parser._actions:\n        if action.required:\n            required.append(action.dest)\n        action.required = False\n        action.default = SUPPRESS\n    return hf_parser, required\ndef check_output_dir(training_args):\n    # Detecting last checkpoint.\n    if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:\n        last_checkpoint = get_last_checkpoint(training_args.output_dir)\n        if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:\n            raise ValueError(\n                f\"Output directory ({training_args.output_dir}) already exists and is not empty. \"\n                \"Use --overwrite_output_dir to overcome.\"\n            )\n        elif last_checkpoint is not None and training_args.resume_from_checkpoint is None:\n            logger.info(\n                f\"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change \"",
+        "type": "code",
+        "location": "/mllm/config/config.py:107-128"
+    },
+    "107": {
+        "file_id": 18,
+        "content": "This code is setting up the required arguments and checking if an output directory already exists. If it does, it raises a ValueError unless the --overwrite_output_dir flag is used. It also detects if a checkpoint file exists in the output directory and resumes training from there if specified.",
+        "type": "comment"
+    },
+    "108": {
+        "file_id": 18,
+        "content": "                \"the `--output_dir` or add `--overwrite_output_dir` to train from scratch.\"\n            )\n    return training_args\nif __name__ == \"__main__\":\n    _ = prepare_args()",
+        "type": "code",
+        "location": "/mllm/config/config.py:129-135"
+    },
+    "109": {
+        "file_id": 18,
+        "content": "The code snippet checks if the `--output_dir` flag is set, and if not, it suggests either setting the `--output_dir` or using the `--overwrite_output_dir` to train from scratch. It then returns the training arguments.",
+        "type": "comment"
+    },
+    "110": {
+        "file_id": 19,
+        "content": "/mllm/conversation/__init__.py",
+        "type": "filepath"
+    },
+    "111": {
+        "file_id": 19,
+        "content": "This code imports necessary classes and functions from the \"base_conversation\" module, including SeparatorStyle, Conversation, register_conv_template, and get_conv_template. It is likely used for initialization purposes or to establish common functionalities within this specific file or module.",
+        "type": "summary"
+    },
+    "112": {
+        "file_id": 19,
+        "content": "from .base_conversation import SeparatorStyle, Conversation, register_conv_template, get_conv_template",
+        "type": "code",
+        "location": "/mllm/conversation/__init__.py:1-1"
+    },
+    "113": {
+        "file_id": 19,
+        "content": "This code imports necessary classes and functions from the \"base_conversation\" module, including SeparatorStyle, Conversation, register_conv_template, and get_conv_template. It is likely used for initialization purposes or to establish common functionalities within this specific file or module.",
+        "type": "comment"
+    },
+    "114": {
+        "file_id": 20,
+        "content": "/mllm/conversation/base_conversation.py",
+        "type": "filepath"
+    },
+    "115": {
+        "file_id": 20,
+        "content": "The code introduces a `Conversation` class for storing chat history and provides styling functions, conversion tools for gradio and OpenAI chat formats. It presents renewable energy benefits, AI chat model templates for user-AI interactions, supporting multiple platforms and avoiding sensitive topics.",
+        "type": "summary"
+    },
+    "116": {
+        "file_id": 20,
+        "content": "# copy from fastchat: https://github.com/lm-sys/FastChat/blob/main/fastchat/conversation.py\n\"\"\"\nConversation prompt templates.\n\"\"\"\nimport dataclasses\nfrom enum import auto, Enum\nfrom typing import List, Tuple, Any, Dict\nclass SeparatorStyle(Enum):\n    \"\"\"Separator styles.\"\"\"\n    ADD_COLON_SINGLE = auto()\n    ADD_COLON_TWO = auto()\n    ADD_SPACE_TWO = auto()\n    NO_COLON_SINGLE = auto()\n    BAIZE = auto()\n    DOLLY = auto()\n    RWKV = auto()\n    PHOENIX = auto()\n    NEW_LINE = auto()\n    BILLA = auto()\n@dataclasses.dataclass\nclass Conversation:\n    \"\"\"A class that keeps all conversation history.\"\"\"\n    # The name of this template\n    name: str\n    # System prompts\n    system: str\n    # Two roles\n    roles: List[str]\n    # All messages\n    messages: List[List[str]]\n    # Offset of few shot examples\n    offset: int\n    # Separators\n    sep_style: SeparatorStyle\n    sep: str\n    sep2: str = None\n    # Stop criteria (the default one is EOS token)\n    stop_str: str = None\n    # Stops generation if meeting any token in this list\n    stop_token_ids: List[int] = None",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:1-47"
+    },
+    "117": {
+        "file_id": 20,
+        "content": "This code defines a `Conversation` class that stores all conversation history, with system prompts, two roles, and all messages. It includes various separator styles, stop criteria, and token IDs to control generation.",
+        "type": "comment"
+    },
+    "118": {
+        "file_id": 20,
+        "content": "    # Used for the state in the gradio servers.\n    # TODO(lmzheng): move this out of this class.\n    conv_id: Any = None\n    skip_next: bool = False\n    model_name: str = None\n    def get_prompt(self) -> str:\n        \"\"\"Get the prompt for generation.\"\"\"\n        if self.sep_style == SeparatorStyle.ADD_COLON_SINGLE:\n            ret = self.system + self.sep\n            for role, message in self.messages:\n                if message:\n                    ret += role + \": \" + message + self.sep\n                else:\n                    ret += role + \":\"\n            return ret\n        elif self.sep_style == SeparatorStyle.ADD_COLON_TWO:\n            seps = [self.sep, self.sep2]\n            ret = self.system + seps[0]\n            for i, (role, message) in enumerate(self.messages):\n                if message:\n                    ret += role + \": \" + message + seps[i % 2]\n                else:\n                    ret += role + \":\"\n            return ret\n        elif self.sep_style == SeparatorStyle.ADD_SPACE_TWO:\n            seps = [self.sep, self.sep2]",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:49-75"
+    },
+    "119": {
+        "file_id": 20,
+        "content": "This code defines a class with attributes 'conv_id', 'skip_next' and 'model_name'. The method 'get_prompt' returns the prompt for generation based on different separator styles (ADD_COLON_SINGLE, ADD_COLON_TWO, ADD_SPACE_TWO). It iterates over messages in each style and appends roles and messages accordingly.",
+        "type": "comment"
+    },
+    "120": {
+        "file_id": 20,
+        "content": "            ret = self.system + seps[0]\n            for i, (role, message) in enumerate(self.messages):\n                if message:\n                    ret += role + \" \" + message + seps[i % 2]\n                else:\n                    ret += role + \"\"\n            return ret\n        elif self.sep_style == SeparatorStyle.NO_COLON_SINGLE:\n            ret = self.system\n            for role, message in self.messages:\n                if message:\n                    ret += role + message + self.sep\n                else:\n                    ret += role\n            return ret\n        elif self.sep_style == SeparatorStyle.BAIZE:\n            ret = self.system + \"\\n\"\n            for role, message in self.messages:\n                if message:\n                    ret += role + message + \"\\n\"\n                else:\n                    ret += role\n            return ret\n        elif self.sep_style == SeparatorStyle.DOLLY:\n            seps = [self.sep, self.sep2]\n            ret = self.system\n            for i, (role, message) in enumerate(self.messages):",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:76-102"
+    },
+    "121": {
+        "file_id": 20,
+        "content": "This code handles different conversation styles by selecting the appropriate method based on the `sep_style`. It constructs a string representation of the conversations, including roles, messages, and separators. It can handle various styles like NO_COLON_SINGLE, BAIZE, and DOLLY, which define how to format the conversation text.",
+        "type": "comment"
+    },
+    "122": {
+        "file_id": 20,
+        "content": "                if message:\n                    ret += role + \":\\n\" + message + seps[i % 2]\n                    if i % 2 == 1:\n                        ret += \"\\n\\n\"\n                else:\n                    ret += role + \":\\n\"\n            return ret\n        elif self.sep_style == SeparatorStyle.RWKV:\n            ret = self.system\n            for i, (role, message) in enumerate(self.messages):\n                if message:\n                    ret += (\n                            role\n                            + \": \"\n                            + message.replace(\"\\r\\n\", \"\\n\").replace(\"\\n\\n\", \"\\n\")\n                    )\n                    ret += \"\\n\\n\"\n                else:\n                    ret += role + \":\"\n            return ret\n        elif self.sep_style == SeparatorStyle.PHOENIX:\n            ret = self.system\n            for role, message in self.messages:\n                if message:\n                    ret += role + \": \" + \"<s>\" + message + \"</s>\"\n                else:\n                    ret += role + \": \" + \"<s>\"",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:103-129"
+    },
+    "123": {
+        "file_id": 20,
+        "content": "This code generates conversation output based on the specified separator style. It adds roles and messages to a string, formatting it appropriately for each separator style (NExT-Chat's base conversation class). If a message is provided, it is added with appropriate formatting; otherwise, only the role is added. Additionally, line breaks are handled differently depending on the separator style.",
+        "type": "comment"
+    },
+    "124": {
+        "file_id": 20,
+        "content": "            return ret\n        elif self.sep_style == SeparatorStyle.NEW_LINE:\n            ret = self.system + self.sep\n            for role, message in self.messages:\n                if message:\n                    ret += role + \"\\n\" + message + self.sep\n                else:\n                    ret += role + \"\\n\"\n            return ret\n        elif self.sep_style == SeparatorStyle.BILLA:\n            ret = self.system + self.sep\n            for role, message in self.messages:\n                if message:\n                    ret += role + \": \" + message + self.sep\n                else:\n                    ret += role + \": \"  # must be end with a space\n            return ret\n        else:\n            raise ValueError(f\"Invalid style: {self.sep_style}\")\n    def append_message(self, role: str, message: str):\n        \"\"\"Append a new message.\"\"\"\n        self.messages.append([role, message])\n    def to_gradio_chatbot(self):\n        \"\"\"Convert the history to gradio chatbot format\"\"\"\n        ret = []\n        for i, (role, msg) in enumerate(self.messages[self.offset:]):",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:130-157"
+    },
+    "125": {
+        "file_id": 20,
+        "content": "This code is for generating conversation history in different styles. It defines a class with attributes like system, messages, offset, and sep_style. The \"to_gradio_chatbot\" function converts the history to gradio chatbot format based on the specified style (NEW_LINE, BILLA, or raising ValueError for invalid style). The \"append_message\" function appends a new message to the conversation history.",
+        "type": "comment"
+    },
+    "126": {
+        "file_id": 20,
+        "content": "            if i % 2 == 0:\n                ret.append([msg, None])\n            else:\n                ret[-1][-1] = msg\n        return ret\n    def to_openai_api_messages(self):\n        \"\"\"Convert the conversation to OpenAI chat completion format.\"\"\"\n        ret = [{\"role\": \"system\", \"content\": self.system}]\n        for i, (_, msg) in enumerate(self.messages[self.offset:]):\n            if i % 2 == 0:\n                ret.append({\"role\": \"user\", \"content\": msg})\n            else:\n                if msg is not None:\n                    ret.append({\"role\": \"assistant\", \"content\": msg})\n        return ret\n    def copy(self):\n        return Conversation(\n            name=self.name,\n            system=self.system,\n            roles=self.roles,\n            messages=[[x, y] for x, y in self.messages],\n            offset=self.offset,\n            sep_style=self.sep_style,\n            sep=self.sep,\n            sep2=self.sep2,\n            stop_str=self.stop_str,\n            stop_token_ids=self.stop_token_ids,\n            conv_id=self.conv_id,",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:158-188"
+    },
+    "127": {
+        "file_id": 20,
+        "content": "This code defines a class for conversations and provides methods to convert the conversation into different formats. The base_conversation() method appends messages in pairs, alternating between user and assistant. The to_openai_api_messages() method converts the conversation into OpenAI chat completion format, appending each message with its corresponding role. Finally, the copy() method creates a new Conversation object by copying attributes from the original one.",
+        "type": "comment"
+    },
+    "128": {
+        "file_id": 20,
+        "content": "            model_name=self.model_name,\n        )\n    def dict(self):\n        return {\n            \"name\": self.name,\n            \"system\": self.system,\n            \"roles\": self.roles,\n            \"messages\": self.messages,\n            \"offset\": self.offset,\n            \"conv_id\": self.conv_id,\n            \"model_name\": self.model_name,\n        }\n# A global registry for all conversation templates\nconv_templates: Dict[str, Conversation] = {}\ndef register_conv_template(template: Conversation, override: bool = False):\n    \"\"\"Register a new conversation template.\"\"\"\n    if not override:\n        assert template.name not in conv_templates, f\"{template.name} has been registered.\"\n    conv_templates[template.name] = template\ndef get_conv_template(name: str) -> Conversation:\n    \"\"\"Get a conversation template.\"\"\"\n    return conv_templates[name].copy()\n# A template with one conversation example\nregister_conv_template(\n    Conversation(\n        name=\"one_shot\",\n        system=\"A chat between a curious human and an artificial intelligence assistant. \"",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:189-224"
+    },
+    "129": {
+        "file_id": 20,
+        "content": "This code defines a Conversation class with attributes like name, system, roles, messages, offset, conv_id, and model_name. The class has methods to get conversation details as a dictionary and register/retrieve conversation templates using template names. A \"one_shot\" conversation example is registered as a template.",
+        "type": "comment"
+    },
+    "130": {
+        "file_id": 20,
+        "content": "               \"The assistant gives helpful, detailed, and polite answers to the human's questions.\",\n        roles=(\"Human\", \"Assistant\"),\n        messages=(\n            (\n                \"Human\",\n                \"What are the key differences between renewable and non-renewable energy sources?\",\n            ),\n            (\n                \"Assistant\",\n                \"Renewable energy sources are those that can be replenished naturally in a relatively \"\n                \"short amount of time, such as solar, wind, hydro, geothermal, and biomass. \"\n                \"Non-renewable energy sources, on the other hand, are finite and will eventually be \"\n                \"depleted, such as coal, oil, and natural gas. Here are some key differences between \"\n                \"renewable and non-renewable energy sources:\\n\"\n                \"1. Availability: Renewable energy sources are virtually inexhaustible, while non-renewable \"\n                \"energy sources are finite and will eventually run out.\\n\"\n                \"2. Environmental impact: Renewable energy sources have a much lower environmental impact \"",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:225-241"
+    },
+    "131": {
+        "file_id": 20,
+        "content": "This code defines a conversation example where the user asks about the differences between renewable and non-renewable energy sources. The assistant provides a detailed, helpful, and polite response explaining the key differences, including their availability and environmental impact.",
+        "type": "comment"
+    },
+    "132": {
+        "file_id": 20,
+        "content": "                \"than non-renewable sources, which can lead to air and water pollution, greenhouse gas emissions, \"\n                \"and other negative effects.\\n\"\n                \"3. Cost: Renewable energy sources can be more expensive to initially set up, but they typically \"\n                \"have lower operational costs than non-renewable sources.\\n\"\n                \"4. Reliability: Renewable energy sources are often more reliable and can be used in more remote \"\n                \"locations than non-renewable sources.\\n\"\n                \"5. Flexibility: Renewable energy sources are often more flexible and can be adapted to different \"\n                \"situations and needs, while non-renewable sources are more rigid and inflexible.\\n\"\n                \"6. Sustainability: Renewable energy sources are more sustainable over the long term, while \"\n                \"non-renewable sources are not, and their depletion can lead to economic and social instability.\",\n            ),\n        ),\n        offset=2,",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:242-254"
+    },
+    "133": {
+        "file_id": 20,
+        "content": "This code is defining a list of advantages for renewable energy sources, such as lower pollution and greenhouse gas emissions, potentially higher reliability, flexibility, and being more sustainable in the long term. It also mentions that non-renewable sources can be more expensive to operate and may lead to economic and social instability due to depletion.",
+        "type": "comment"
+    },
+    "134": {
+        "file_id": 20,
+        "content": "        sep_style=SeparatorStyle.ADD_COLON_SINGLE,\n        sep=\"\\n### \",\n        stop_str=\"###\",\n    )\n)\n# Vicuna v1.1 template\nregister_conv_template(\n    Conversation(\n        name=\"vicuna_v1.1\",\n        system=\"A chat between a curious user and an artificial intelligence assistant. \"\n               \"The assistant gives helpful, detailed, and polite answers to the user's questions.\",\n        roles=(\"USER\", \"ASSISTANT\"),\n        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.ADD_COLON_TWO,\n        sep=\" \",\n        sep2=\"</s>\",\n    )\n)\n# Koala default template\nregister_conv_template(\n    Conversation(\n        name=\"koala_v1\",\n        system=\"BEGINNING OF CONVERSATION:\",\n        roles=(\"USER\", \"GPT\"),\n        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.ADD_COLON_TWO,\n        sep=\" \",\n        sep2=\"</s>\",\n    )\n)\n# Dolly V2 default template\nregister_conv_template(\n    Conversation(\n        name=\"dolly_v2\",\n        system=\"Below is an instruction that describes a task. Write a response that appropriately completes the request.\\n\\n\",",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:255-294"
+    },
+    "135": {
+        "file_id": 20,
+        "content": "This code is registering conversation templates for different AI chat models. It defines the name, system description, roles (USER and ASSISTANT), messages, offset, separator styles, and separators for each template. These templates provide a starting point for conversations between users and AI assistants.",
+        "type": "comment"
+    },
+    "136": {
+        "file_id": 20,
+        "content": "        roles=(\"### Instruction\", \"### Response\"),\n        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.DOLLY,\n        sep=\"\\n\\n\",\n        sep2=\"### End\",\n    )\n)\n# OpenAssistant Pythia default template\nregister_conv_template(\n    Conversation(\n        name=\"oasst_pythia\",\n        system=\"\",\n        roles=(\"<|prompter|>\", \"<|assistant|>\"),\n        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.NO_COLON_SINGLE,\n        sep=\"<|endoftext|>\",\n    )\n)\n# StableLM Alpha default template\nregister_conv_template(\n    Conversation(\n        name=\"stablelm\",\n        system=\"\"\"<|SYSTEM|># StableLM Tuned (Alpha version)\n- StableLM is a helpful and harmless open-source AI language model developed by StabilityAI.\n- StableLM is excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.\n- StableLM is more than just an information source, StableLM is also able to write poetry, short stories, and make jokes.\n- StableLM will refuse to participate in anything that could harm a human.",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:295-325"
+    },
+    "137": {
+        "file_id": 20,
+        "content": "This code registers three different conversation templates for instruction and response handling, including OpenAssistant Pythia, StableLM Alpha, and a base conversation. Each template specifies the name, system message, roles, messages, offset, and separator styles. These templates are used to guide the interaction between the model and user in various applications.",
+        "type": "comment"
+    },
+    "138": {
+        "file_id": 20,
+        "content": "\"\"\",\n        roles=(\"<|USER|>\", \"<|ASSISTANT|>\"),\n        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.NO_COLON_SINGLE,\n        sep=\"\",\n        stop_token_ids=[50278, 50279, 50277, 1, 0],\n    )\n)\n# Baize default template\nregister_conv_template(\n    Conversation(\n        name=\"baize\",\n        system=\"The following is a conversation between a human and an AI assistant named Baize (named after a mythical creature in Chinese folklore). Baize is an open-source AI assistant developed by UCSD and Sun Yat-Sen University. The human and the AI assistant take turns chatting. Human statements start with [|Human|] and AI assistant statements start with [|AI|]. The AI assistant always provides responses in as much detail as possible, and in Markdown format. The AI assistant always declines to engage with topics, questions and instructions related to unethical, controversial, or sensitive issues. Complete the transcript in exactly that format.\",\n        roles=(\"[|Human|]\", \"[|AI|]\"),\n        messages=(",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:326-342"
+    },
+    "139": {
+        "file_id": 20,
+        "content": "This code snippet defines a Conversation object, likely for use in a chatbot or AI assistant. It specifies the roles of user and assistant, an empty message history, starting offset, and separator style, as well as stop tokens to consider when processing input. The Baize default template is also registered, presumably as a pre-defined conversation template for a specific bot named \"Baize\".",
+        "type": "comment"
+    },
+    "140": {
+        "file_id": 20,
+        "content": "            (\"[|Human|]\", \"Hello!\"),\n            (\"[|AI|]\", \"Hi!\"),\n        ),\n        offset=2,\n        sep_style=SeparatorStyle.BAIZE,\n        sep=\"[|Human|]\",\n        stop_str=\"[|Human|]\",\n    )\n)\n# RWKV-4-Raven default template\nregister_conv_template(\n    Conversation(\n        name=\"rwkv\",\n        system=\"The following is a coherent verbose detailed conversation between Bob and Alice.\\n\\n\",\n        roles=(\"Bob\", \"Alice\"),\n        messages=(\n            (\"Bob\", \"Hi\"),\n            (\n                \"Alice\",\n                \"Hi. I am your assistant and I will answer all questions. Please feel free to ask any question and I will always answer it.\",\n            ),\n        ),\n        offset=2,\n        sep_style=SeparatorStyle.RWKV,\n        sep=\"\",\n        stop_str=\"\\n\\n\",\n    )\n)\n# Buddy default template\nregister_conv_template(\n    Conversation(\n        name=\"openbuddy\",\n        system=\"\"\"Consider a conversation between User (a human) and Assistant (named Buddy).\nBuddy is an INTP-T, a friendly, intelligent and multilingual AI assistant, by OpenBuddy team. GitHub: https://github.com/OpenBuddy/OpenBuddy",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:343-378"
+    },
+    "141": {
+        "file_id": 20,
+        "content": "This code registers conversation templates for NExT-Chat. The 'base_conversation' template uses AI and Human roles with a predefined greeting, while the 'rwkv' template is the default RWKV-4-Raven conversation using Bob and Alice roles with customizable messages. The 'openbuddy' template simulates a conversation between User and an INTP-T named Buddy from OpenBuddy AI assistant project, providing details on how to use it. All templates are registered for further usage in the chat system.",
+        "type": "comment"
+    },
+    "142": {
+        "file_id": 20,
+        "content": "Buddy cannot access the Internet.\nBuddy can fluently speak the user's language (e.g. English, Chinese).\nBuddy can generate poems, stories, code, essays, songs, parodies, and more.\nBuddy possesses vast knowledge about the world, history, and culture.\nBuddy's responses are always safe, creative, high-quality, human-like, and interesting.\nBuddy strictly refuses to discuss political, NSFW, or other unsafe topics.\nUser: Hi.\nAssistant: Hi, I'm Buddy, your AI assistant. How can I help you today?\"\"\",\n        roles=(\"User\", \"Assistant\"),\n        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.ADD_COLON_SINGLE,\n        sep=\"\\n\",\n    )\n)\n# Phoenix default template\nregister_conv_template(\n    Conversation(\n        name=\"phoenix\",\n        system=\"A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.\\n\\n\",\n        roles=(\"Human\", \"Assistant\"),\n        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.PHOENIX,",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:379-404"
+    },
+    "143": {
+        "file_id": 20,
+        "content": "This code defines a conversation base class for an AI assistant, which can be used to create various chatbot templates. The assistant responds with safe, creative, high-quality, human-like, and interesting messages while avoiding political or NSFW topics. It can generate diverse content such as poems, stories, and more. The code also includes a default Phoenix template for a conversational AI.",
+        "type": "comment"
+    },
+    "144": {
+        "file_id": 20,
+        "content": "        sep=\"</s>\",\n    )\n)\n# ChatGPT default template\nregister_conv_template(\n    Conversation(\n        name=\"chatgpt\",\n        system=\"You are a helpful assistant.\",\n        roles=(\"user\", \"assistant\"),\n        messages=(),\n        offset=0,\n        sep_style=None,\n        sep=None,\n    )\n)\n# Claude default template\nregister_conv_template(\n    Conversation(\n        name=\"claude\",\n        system=\"\",\n        roles=(\"Human\", \"Assistant\"),\n        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.ADD_COLON_SINGLE,\n        sep=\"\\n\\n\",\n    )\n)\n# MPT default template\nregister_conv_template(\n    Conversation(\n        name=\"mpt\",\n        system=\"\"\"<|im_start|>system\n- You are a helpful assistant chatbot trained by MosaicML.\n- You answer questions.\n- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.\n- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.\n\"\"\",\n        roles=(\"<|im_start|>user\", \"<|im_start|>assistant\"),",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:405-445"
+    },
+    "145": {
+        "file_id": 20,
+        "content": "The code defines default conversation templates for three different AI models: ChatGPT, Claude, and MPT. Each template includes the name of the model, system prompt (if any), roles involved in the conversation, initial messages, and separator style/character. These templates can be used as a starting point to create conversations with each respective AI model.",
+        "type": "comment"
+    },
+    "146": {
+        "file_id": 20,
+        "content": "        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.NEW_LINE,\n        sep=\"<|im_end|>\",\n        stop_token_ids=[50278, 0],\n    )\n)\n# Bard default template\n# Reference: https://github.com/google/generative-ai-python/blob/9c99bcb474a991a97a2e7d62fcdb52db7ce40729/google/generativeai/discuss.py#L150\n#            https://github.com/google/generative-ai-python/blob/9c99bcb474a991a97a2e7d62fcdb52db7ce40729/google/generativeai/discuss.py#L40\nregister_conv_template(\n    Conversation(\n        name=\"bard\",\n        system=\"\",\n        roles=(\"0\", \"1\"),\n        messages=(),\n        offset=0,\n        sep_style=None,\n        sep=None,\n    )\n)\n# BiLLa default template\nregister_conv_template(\n    Conversation(\n        name=\"billa\",\n        system=\"\",\n        roles=(\"Human\", \"Assistant\"),\n        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.BILLA,\n        sep=\"\\n\",\n        stop_str=\"Human:\",\n    )\n)\n# custom otter template\nregister_conv_template(\n    Conversation(\n        name='otter',\n        system='',",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:446-487"
+    },
+    "147": {
+        "file_id": 20,
+        "content": "This code defines and registers three conversation templates (Bard, BiLLa, and Otter) with specific configurations for name, roles, separator style, and other parameters.",
+        "type": "comment"
+    },
+    "148": {
+        "file_id": 20,
+        "content": "        roles=('User:', 'GPT:<answer>'),\n        messages=(),\n        offset=0,\n        sep_style=SeparatorStyle.ADD_SPACE_TWO,\n        sep=' ',\n        sep2='<|endofchunk|>',\n    )\n)\nif __name__ == \"__main__\":\n    conv = get_conv_template(\"vicuna_v1.1\")\n    conv.append_message(conv.roles[0], \"Hello!\")\n    conv.append_message(conv.roles[1], \"Hi!\")\n    conv.append_message(conv.roles[0], \"How are you?\")\n    conv.append_message(conv.roles[1], None)\n    print(conv.get_prompt())",
+        "type": "code",
+        "location": "/mllm/conversation/base_conversation.py:488-503"
+    },
+    "149": {
+        "file_id": 20,
+        "content": "The code initializes a conversation template using the \"vicuna_v1.1\" model, appends messages to it, and then prints the prompt generated by the conversation template. The conversation template has roles for User and GPT, empty messages, and defined separators.",
+        "type": "comment"
+    },
+    "150": {
+        "file_id": 21,
+        "content": "/mllm/dataset/__init__.py",
+        "type": "filepath"
+    },
+    "151": {
+        "file_id": 21,
+        "content": "This code imports functions and classes from different modules within the NExT-Chat/mllm/dataset directory to be used in data processing and preparation. It consolidates various functionalities into a single file for easy access and management.",
+        "type": "summary"
+    },
+    "152": {
+        "file_id": 21,
+        "content": "from .root import *\nfrom .utils import *\nfrom .process_function import *\nfrom .single_image_convsation import *\nfrom .single_image_dataset import *\nfrom .builder import prepare_data",
+        "type": "code",
+        "location": "/mllm/dataset/__init__.py:1-7"
+    },
+    "153": {
+        "file_id": 21,
+        "content": "This code imports functions and classes from different modules within the NExT-Chat/mllm/dataset directory to be used in data processing and preparation. It consolidates various functionalities into a single file for easy access and management.",
+        "type": "comment"
+    },
+    "154": {
+        "file_id": 22,
+        "content": "/mllm/dataset/builder.py",
+        "type": "filepath"
+    },
+    "155": {
+        "file_id": 22,
+        "content": "The `prepare_data` function creates a dataset, applies optional transforms, constructs a process function and returns a SingleImageInteractive dataset object for NExT-Chat.",
+        "type": "summary"
+    },
+    "156": {
+        "file_id": 22,
+        "content": "from functools import partial\nfrom typing import Callable, Dict, Tuple, Any, Optional\nfrom torch.utils.data import Dataset\nfrom transformers import EvalPrediction, TrainingArguments\nfrom .root import DATASETS, METRICS, TRANSFORMS, FUNCTIONS\nfrom .single_image_convsation import WRAPPER_DATASET\nfrom .single_image_interactive import SingleImageInteractive\nfrom ..conversation import get_conv_template\nfrom .utils import init_ceph_client_if_needed\nDatasetDict = Dict[str, Dataset]\nComputeMetrics = Callable[[EvalPrediction], Dict]\ndef prepare_data(\n        data_args,\n        model_args,\n        training_args: TrainingArguments,\n        preprocessor: Dict[str, Any],\n) -> Tuple[DatasetDict, Optional[ComputeMetrics]]:\n    # raw dataset\n    datasets = {\n        'train': partial(DATASETS.build, data_args.train) if training_args.do_train else None,\n        'validation': partial(DATASETS.build, data_args.validation) if training_args.do_eval else None,\n        'test': partial(DATASETS.build, data_args.test) if training_args.do_predict else None,",
+        "type": "code",
+        "location": "/mllm/dataset/builder.py:1-27"
+    },
+    "157": {
+        "file_id": 22,
+        "content": "This function `prepare_data` takes in data, model arguments and training arguments as inputs. It builds datasets for 'train', 'validation', and 'test' using the provided partial functions from DATASETS module. Depending on the training arguments, if do_train is True, it will build a dataset for training; if do_eval is True, it will build a dataset for validation; if do_predict is True, it will build a dataset for testing. The function returns a DatasetDict and an optional ComputeMetrics.",
+        "type": "comment"
+    },
+    "158": {
+        "file_id": 22,
+        "content": "    }\n    # compute metric\n    compute_metric_cfg = data_args.get('compute_metric', None)\n    compute_metrics = build_compute_metric(compute_metric_cfg, preprocessor)\n    # conv dataset wrap\n    conv_args = model_args.conv_args\n    tokenize_kwargs = conv_args.get('tokenize_kwargs', {})\n    conv_template = conv_args.get('conv_template', 'vicuna_v1.1')\n    conv_template = partial(get_conv_template, name=conv_template)\n    transforms = conv_args.get('transforms', None)\n    if transforms is not None:\n        transforms = TRANSFORMS.build(transforms)\n    # process func\n    process_func = {}\n    for k, v in model_args.process_func_args.items():\n        process_func[k] = FUNCTIONS.build(cfg=v)\n    conv_dataset_cls = partial(\n        WRAPPER_DATASET.get(data_args.get(\"dataset_wrapper\", \"conv\"), \"conv\"),\n        preprocessor=preprocessor,\n        process_func=process_func,\n        tokenize_kwargs=tokenize_kwargs,\n        conv_template=conv_template,\n        training_args=training_args,\n        transforms=transforms,\n    )",
+        "type": "code",
+        "location": "/mllm/dataset/builder.py:28-53"
+    },
+    "159": {
+        "file_id": 22,
+        "content": "This code appears to be building a dataset for a model, handling compute metrics, and wrapping the dataset with conv functionality. It involves getting configuration arguments, building compute metrics and transforms, and creating a process function. The final step is building a wrapper dataset class using the obtained configurations.",
+        "type": "comment"
+    },
+    "160": {
+        "file_id": 22,
+        "content": "    ds = {\n        'train': conv_dataset_cls(dataset_generator=datasets['train'], mode='train') if datasets['train'] is not None else None,\n        'validation': conv_dataset_cls(dataset_generator=datasets['validation'], mode='validation') if datasets['validation'] is not None else None,\n        'test': conv_dataset_cls(dataset_generator=datasets['test'], mode='test') if datasets['test'] is not None else None,\n    }\n    # multi test set\n    if hasattr(data_args, 'multitest') and bool(data_args.multitest) \\\n            and hasattr(training_args, 'do_multi_predict') and training_args.do_multi_predict:\n        print(f\"processing multitest set\")\n        k2v = {}\n        for k, item in data_args.multitest.items():\n            _dataset_cls = partial(DATASETS.build, item['cfg'])\n            _compute_metric = build_compute_metric(item['compute_metric'], preprocessor)\n            k2v[k] = {\n                \"dataset\": conv_dataset_cls(dataset_generator=_dataset_cls, mode='test'),\n                \"compute_metric\": _compute_metric",
+        "type": "code",
+        "location": "/mllm/dataset/builder.py:54-70"
+    },
+    "161": {
+        "file_id": 22,
+        "content": "The code creates datasets for training, validation, and test sets based on provided dataset generators. If multi-test sets are specified in data_args and do_multi_predict is True in training_args, it processes the multitest set by creating a dictionary of datasets and compute metrics for each test set.",
+        "type": "comment"
+    },
+    "162": {
+        "file_id": 22,
+        "content": "            }\n        ds['multitest'] = k2v\n        print(f\"processing multitest set. done.\")\n    # in default, ceph client do init at the beginning of program.\n    #  importantly, before dataloader worker fork.\n    lazy_init = data_args.get('lazy_init', True)\n    if not lazy_init:\n        init_ceph_client_if_needed()\n    return ds, compute_metrics\ndef build_compute_metric(compute_metric_cfg, preprocessor):\n    if compute_metric_cfg is not None:\n        compute_metric_cfg = dict(compute_metric_cfg)  # copy cfg because we modify it\n        compute_metric_cfg.update(dict(preprocessor=preprocessor))\n        compute_metrics = METRICS.build(cfg=compute_metric_cfg)\n    else:\n        compute_metrics = None\n    return compute_metrics\ndef prepare_interactive(\n        model_args,\n        preprocessor: Dict[str, Any],\n):\n    conv_args = model_args.conv_args\n    tokenize_kwargs = conv_args.get('tokenize_kwargs', {})\n    conv_template = conv_args.get('conv_template', 'vicuna_v1.1')\n    conv_template = partial(get_conv_template, name=conv_template)",
+        "type": "code",
+        "location": "/mllm/dataset/builder.py:71-100"
+    },
+    "163": {
+        "file_id": 22,
+        "content": "This code is part of the NExT-Chat dataset builder. It initializes a ceph client if necessary, builds compute metrics based on configuration, and prepares an interactive conversation model with a given set of arguments and a partial function for getting a conversation template. The function takes preprocessor and model_args as parameters. The code also includes a function to build compute metrics using the METRICS module.",
+        "type": "comment"
+    },
+    "164": {
+        "file_id": 22,
+        "content": "    transforms = conv_args.get('transforms', None)\n    if transforms is not None:\n        transforms = TRANSFORMS.build(transforms)\n    # process func\n    process_func = {}\n    for k, v in model_args.process_func_args.items():\n        process_func[k] = FUNCTIONS.build(cfg=v)\n    ds = SingleImageInteractive(\n        preprocessor=preprocessor,\n        process_func=process_func,\n        tokenize_kwargs=tokenize_kwargs,\n        conv_template=conv_template,\n        training_args=None,\n        transforms=transforms,\n        mode='test',\n    )\n    return ds",
+        "type": "code",
+        "location": "/mllm/dataset/builder.py:101-118"
+    },
+    "165": {
+        "file_id": 22,
+        "content": "This code builds a dataset for the NExT-Chat system. It checks if 'transforms' is present in the config and applies them, then constructs a process function from the input arguments. It finally returns a SingleImageInteractive dataset object with the specified parameters.",
+        "type": "comment"
+    },
+    "166": {
+        "file_id": 23,
+        "content": "/mllm/dataset/process_function/__init__.py",
+        "type": "filepath"
+    },
+    "167": {
+        "file_id": 23,
+        "content": "This code imports various process functions from related modules for handling chat and box data processing. It includes functions for conversational, textual, and image-based processes, as well as formatters for box data. The `prepare_target_processor` function is also imported for preparing target processors.",
+        "type": "summary"
+    },
+    "168": {
+        "file_id": 23,
+        "content": "from .chat_process_function import (\n    ChatConvProcess,\n    ChatTextProcess,\n    ChatImageProcessor,\n)\nfrom .box_process_function import (\n    BoxFormatProcess,\n    BoxFormatter,\n    PlainBoxFormatter,\n    TokenFormatter,\n    prepare_target_processor,\n)",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/__init__.py:1-13"
+    },
+    "169": {
+        "file_id": 23,
+        "content": "This code imports various process functions from related modules for handling chat and box data processing. It includes functions for conversational, textual, and image-based processes, as well as formatters for box data. The `prepare_target_processor` function is also imported for preparing target processors.",
+        "type": "comment"
+    },
+    "170": {
+        "file_id": 24,
+        "content": "/mllm/dataset/process_function/box_process_function.py",
+        "type": "filepath"
+    },
+    "171": {
+        "file_id": 24,
+        "content": "BoxFormatProcess normalizes box format in NExT-Chat, while TokenFormatter processes bounding boxes, annotates text data, and includes methods for special tokens. Both classes are combined to create a model with preprocessor and target processor assigned.",
+        "type": "summary"
+    },
+    "172": {
+        "file_id": 24,
+        "content": "import re\nimport sys\nimport logging\nimport typing\nfrom typing import List, Dict, Any, Tuple, Union\nfrom ..utils.transform import norm_box_xyxy, norm_point_xyxy\nfrom ..root import (\n    FUNCTIONS,\n    BaseTargetProcessFunc,\n    BOXES_PLACEHOLDER,\n    BOXES_PROCESSOR,\n    POINTS_PLACEHOLDER,\n)\nfrom ...utils import smart_tokenizer_and_embedding_resize\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\nlogging.basicConfig(\n    format=\"%(asctime)s - %(levelname)s - %(name)s - %(message)s\",\n    datefmt=\"%m/%d/%Y %H:%M:%S\",\n    handlers=[logging.StreamHandler(sys.stdout), ],\n)\nBox = List[Union[float, int]]\nBoxes = List[Box]\nBoxesSeq = List[Boxes]\n@FUNCTIONS.register_module()\nclass BoxFormatProcess(BaseTargetProcessFunc):\n    def __call__(self, raw_conv: List[Dict[str, Any]], target: Dict[str, Any], preprocessor: Dict[str, Any],\n                 multimage_mode=False) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:\n        box_formatter = preprocessor['target']['boxes']\n        if multimage_mode:\n            target = typing.cast(list, target)",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:1-39"
+    },
+    "173": {
+        "file_id": 24,
+        "content": "This code defines a function, BoxFormatProcess, that takes in raw conversation data and a target dictionary with boxes information. It also accepts optional multimage mode argument. The function normalizes the box format, registers it as a module, and returns a tuple containing updated conversation data and the target dictionary. The preprocessor dictionary is used to define how the target's boxes should be processed. This function is part of the NExT-Chat framework for multi-modal large language models.",
+        "type": "comment"
+    },
+    "174": {
+        "file_id": 24,
+        "content": "            outer_normalized_boxes = []\n            for tgt in target:\n                normalized_boxes = []\n                if tgt is not None and 'boxes' in tgt:\n                    for box in tgt['boxes']:\n                        normalized_boxes.append(\n                            norm_box_xyxy(box, w=tgt['width'], h=tgt['height'])\n                        )\n                outer_normalized_boxes.append(normalized_boxes)\n            normalized_boxes = outer_normalized_boxes\n            outer_normalized_points = []\n            for tgt in target:\n                normalized_points = []\n                if tgt is not None and 'boxes' in tgt:\n                    for box in tgt['boxes']:\n                        normalized_points.append(\n                            norm_box_xyxy(box, w=tgt['width'], h=tgt['height'])\n                        )\n                outer_normalized_points.append(normalized_points)\n            normalized_points = outer_normalized_points\n        else:\n            # normalize target\n            normalized_boxes = []",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:40-62"
+    },
+    "175": {
+        "file_id": 24,
+        "content": "This code processes a dataset by normalizing the target boxes and points. It iterates over each target in the dataset and checks if 'boxes' key is present. If so, it appends normalized boxes and points to respective lists. Finally, it assigns these lists as normalized_boxes and normalized_points for further processing.",
+        "type": "comment"
+    },
+    "176": {
+        "file_id": 24,
+        "content": "            if target is not None and 'boxes' in target:\n                for box in target['boxes']:\n                    normalized_boxes.append(\n                        norm_box_xyxy(box, w=target['width'], h=target['height'])\n                    )\n            normalized_points = []\n            if target is not None and 'points' in target:\n                for point in target['points']:\n                    normalized_points.append(\n                        norm_point_xyxy(point, w=target['width'], h=target['height'])\n                    )\n        # convert bboxes_seq\n        ret_all_boxes = []\n        ret_gpt_boxes = []\n        for sentence in raw_conv:\n            words: str = sentence['value']\n            boxes_seq: List[List[int]] = sentence.get('boxes_seq', None)\n            assert POINTS_PLACEHOLDER not in words # there should be no potints\n            if boxes_seq is not None:\n                # map box seq\n                boxes_seq: List[Boxes] = map_obj(normalized_boxes, boxes_seq)\n                # assert len(boxes_seq) == len([x for x in words.split() if x==BOXES_PLACEHOLDER])",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:63-85"
+    },
+    "177": {
+        "file_id": 24,
+        "content": "This code checks if 'boxes' and 'points' are present in the target. If they are, it normalizes them using specific functions with corresponding width and height values. The code then iterates over each sentence in raw_conv, extracts the box sequence associated with each sentence, asserts that there are no point placeholders, and maps the normalized boxes onto the box sequences.",
+        "type": "comment"
+    },
+    "178": {
+        "file_id": 24,
+        "content": "                # reformat; replace <boxes> placeholder\n                # converted = box_formatter(words, boxes_seq)\n                # words = converted\n                to_replace_strs = [\" \".join([BOXES_PLACEHOLDER]*len(seq)) for seq in boxes_seq]\n                words = words.replace(BOXES_PLACEHOLDER, \"{}\").format(*to_replace_strs)\n                ret_all_boxes.extend(flatten(boxes_seq))\n                if sentence[\"from\"] == \"gpt\":\n                    ret_gpt_boxes.extend(flatten(boxes_seq))\n            points_seq: List[List[int]] = sentence.get('points_seq', None)\n            if points_seq is not None:\n                # map point seq\n                points_seq: List[Boxes] = map_obj(normalized_points, points_seq)\n                # reformat; replace <points> placeholder\n                # converted = box_formatter.call_on_point(words, points_seq)\n                # words = converted\n            if boxes_seq is not None or points_seq is not None:\n                sentence['raw_value'] = sentence['value']",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:86-102"
+    },
+    "179": {
+        "file_id": 24,
+        "content": "This code processes a dataset by replacing placeholders for boxes and points with actual box coordinates or point sequences. It also stores the original sentence value as 'raw_value' if any boxes or points are found.",
+        "type": "comment"
+    },
+    "180": {
+        "file_id": 24,
+        "content": "                sentence['value'] = words\n        return raw_conv, dict(all_boxes=ret_all_boxes, gpt_boxes=ret_gpt_boxes)\ndef flatten(boxes: List[Boxes]):\n    return [b for a in boxes for b in a]\ndef map_obj(boxes_value: List[List[float]], boxes_seq: List[List[int]]) -> List[List[List[float]]]:\n    \"\"\"\n    >>> normalized_boxes = [[0.1, 0.1, 0.1, 0.1], [0.2, 0.2, 0.2, 0.2], [0.3, 0.3, 0.3, 0.3]]\n    >>> boxes_seq_ = [[3, 1], [2]]\n    >>> var = map_obj(normalized_boxes, boxes_seq_)\n    >>> assert var == [[[0.3,0.3,0.3,0.3], [0.1,0.1,0.1,0.1]], [0.2,0.2,0.2,0.2]]\n    \"\"\"\n    try:\n        ret = []\n        for boxes in boxes_seq:\n            boxes_ret = []\n            for box_index in boxes:\n                if isinstance(box_index, (list, tuple)):\n                    boxes_ret.append(boxes_value[box_index[0]][box_index[1]])\n                else:\n                    boxes_ret.append(boxes_value[box_index])\n            ret.append(boxes_ret)\n        return ret\n    except:\n        raise SystemExit(f\"error: map obj {boxes_value} {boxes_seq}\")",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:103-130"
+    },
+    "181": {
+        "file_id": 24,
+        "content": "The code defines a function `map_obj` that takes in a list of normalized boxes and box sequences. It flattens the normalized boxes into a single list and then maps each box sequence to its corresponding normalized box, creating a list of lists. The purpose is to create a representation that can be easily processed or analyzed further.",
+        "type": "comment"
+    },
+    "182": {
+        "file_id": 24,
+        "content": "class BoxFormatter:\n    def __init__(self, bboxes_token=BOXES_PLACEHOLDER, points_token=POINTS_PLACEHOLDER):\n        self.bboxes_token = bboxes_token\n        self.points_token = points_token\n        # normally the bboxes_token_pat is the same as bboxes_token if u not use some weird token\n        self.bboxes_token_pat = re.compile(bboxes_token)\n        self.points_token_pat = re.compile(points_token)\n    def __call__(self, sentence: str, bboxes_seq: BoxesSeq) -> str:\n        all_box = self.bboxes_token_pat.findall(sentence)\n        assert len(all_box) == len(bboxes_seq), f\"not match. sentence: {sentence}. boxes:{bboxes_seq}\"\n        if len(all_box) == 0:\n            return sentence\n        bboxes_strs = [self.format_box(bboxes) for bboxes in bboxes_seq]\n        converted = sentence.replace(self.bboxes_token, '{}').format(*bboxes_strs)\n        return converted\n    def call_on_point(self, sentence: str, points_seq: BoxesSeq) -> str:\n        all_box = self.points_token_pat.findall(sentence)\n        assert len(all_box) == len(points_seq), f\"not match. sentence: {sentence}. boxes:{points_seq}\"",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:133-152"
+    },
+    "183": {
+        "file_id": 24,
+        "content": "The code defines a `BoxFormatter` class that initializes with bboxes and points tokens. It takes a sentence and a sequence of boxes, replaces the bbox token with formatted box strings, and returns the modified sentence. It also has a separate method to handle point sequences.",
+        "type": "comment"
+    },
+    "184": {
+        "file_id": 24,
+        "content": "        if len(all_box) == 0:\n            return sentence\n        bboxes_strs = [self.format_point(bboxes) for bboxes in points_seq]\n        converted = sentence.replace(self.points_token, '{}').format(*bboxes_strs)\n        return converted\n    def format_point(self, points) -> str:\n        raise NotImplementedError\n    def format_box(self, bboxes: Boxes) -> str:\n        raise NotImplementedError\n    def extract(self, string: str) -> List[Boxes]:\n        raise NotImplementedError\n    def extract_point(self, string: str) -> List[Boxes]:\n        raise NotImplementedError\n@BOXES_PROCESSOR.register_module()\nclass PlainBoxFormatter(BoxFormatter):\n    def __init__(self, *args, precision=3, use_small_brackets=False, **kwargs):\n        super().__init__(*args, **kwargs)\n        self.precision = precision\n        self.use_small_brackets = use_small_brackets\n        small_brackets_pat = re.compile(r'\\(\\d(?:\\.\\d*)?(?:,\\d(?:\\.\\d*)?){3}(?:;\\d(?:\\.\\d*)?(?:,\\d(?:\\.\\d*)?){3})*\\)')\n        small_brackets_point_pat = re.compile(r'\\(\\d(?:\\.\\d*)?(?:,\\d(?:\\.\\d*)?)(?:;\\d(?:\\.\\d*)?(?:,\\d(?:\\.\\d*)?))*\\)')",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:153-181"
+    },
+    "185": {
+        "file_id": 24,
+        "content": "This code defines a class for formatting and processing box data. The `BoxFormatter` class initializes with precision, use_small_brackets parameters, and uses regular expression patterns to match and format box data in the strings. It provides methods like `format_point`, `format_box`, `extract`, and `extract_point` which are not implemented yet, raising a NotImplementedError. The `PlainBoxFormatter` class extends `BoxFormatter` with additional initialization parameters.",
+        "type": "comment"
+    },
+    "186": {
+        "file_id": 24,
+        "content": "        middle_brackets_pat = re.compile(r'\\[\\d(?:\\.\\d*)?(?:,\\d(?:\\.\\d*)?){3}(?:;\\d(?:\\.\\d*)?(?:,\\d(?:\\.\\d*)?){3})*\\]')\n        middle_brackets_point_pat = re.compile(r'\\[\\d(?:\\.\\d*)?(?:,\\d(?:\\.\\d*)?)(?:;\\d(?:\\.\\d*)?(?:,\\d(?:\\.\\d*)?))*\\]')\n        self.pat = small_brackets_pat if use_small_brackets else middle_brackets_pat\n        self.point_pat = small_brackets_point_pat if use_small_brackets else middle_brackets_point_pat\n    def format_box(self, boxes: Boxes) -> str:\n        box_strs = []\n        for box in boxes:\n            box_strs.append(','.join([f\"{elem:.{self.precision}f}\" for elem in box]))\n        box_str = ';'.join(box_strs)\n        if self.use_small_brackets:\n            return \"(\" + box_str + \")\"\n        return \"[\" + box_str + \"]\"\n    def format_point(self, points) -> str:\n        return self.format_box(points)\n    def extract(self, string: str) -> List[Boxes]:\n        \"\"\" balabala<boxes>balabala<boxes> -> [boxes, boxes] \"\"\"\n        ret = []\n        for bboxes_str in self.pat.findall(string):",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:183-204"
+    },
+    "187": {
+        "file_id": 24,
+        "content": "This code defines a class with methods to format and extract bounding boxes from a given string. The class has a parameter that determines whether to use small or middle brackets for box formatting, and precision for floating point numbers within the boxes. It uses regular expressions to find occurrences of boxes in the input string, then formats them as needed before returning a list of those boxes.",
+        "type": "comment"
+    },
+    "188": {
+        "file_id": 24,
+        "content": "            bboxes = []\n            bbox_strs = bboxes_str.replace(\"(\", \"\").replace(\")\", \"\").replace(\"[\", \"\").replace(\"]\", \"\").split(\";\")\n            for bbox_str in bbox_strs:\n                bbox = list(map(float, bbox_str.split(',')))\n                bboxes.append(bbox)\n            ret.append(bboxes)\n        return ret\n    def extract_point(self, string: str) -> List[Boxes]:\n        \"\"\" balabala<boxes>balabala<boxes> -> [boxes, boxes] \"\"\"\n        ret = []\n        for bboxes_str in self.point_pat.findall(string):\n            bboxes = []\n            bbox_strs = bboxes_str.replace(\"(\", \"\").replace(\")\", \"\").replace(\"[\", \"\").replace(\"]\", \"\").split(\";\")\n            for bbox_str in bbox_strs:\n                bbox = list(map(float, bbox_str.split(',')))\n                bboxes.append(bbox)\n            ret.append(bboxes)\n        return ret\n@BOXES_PROCESSOR.register_module()\nclass TokenFormatter(BoxFormatter):\n    def __init__(self, num_bins=1001):\n        super().__init__()\n        self.extract_box_pat = re.compile(r'<b_st><bin_\\d*?>(?:<bin_\\d*?>){3}(?:<b_sep><bin_\\d*?>(?:<bin_\\d*?>){3})*<b_ed>')",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:205-231"
+    },
+    "189": {
+        "file_id": 24,
+        "content": "This code defines a class called TokenFormatter, which inherits from BoxFormatter. It has two methods: box_process_function and extract_point. The box_process_function method processes bboxes by removing parentheses and brackets, splitting them into separate boxes, and converting the box coordinates to float values. The extract_point method finds occurrences of a specific pattern in a given string and extracts boxes from it using the box_process_function method. TokenFormatter is registered with BOXES_PROCESSOR for further usage.",
+        "type": "comment"
+    },
+    "190": {
+        "file_id": 24,
+        "content": "        self.extract_point_pat = re.compile(r'<p_st><bin_\\d*?>(?:<bin_\\d*?>){1}(?:<p_sep><bin_\\d*?>(?:<bin_\\d*?>){1})*<p_ed>')\n        self.num_bins = num_bins\n        self.use_sep = True\n        self.use_begin_end = True\n        self.box_begin = '<b_st>'\n        self.box_sep = '<b_sep>'\n        self.box_end = '<b_ed>'\n        self.point_begin = '<p_st>'\n        self.point_sep = '<p_sep>'\n        self.point_end = '<p_ed>'\n    def format_point(self, points) -> str:\n        final_str = []\n        for bbox in points:\n            quant_x0 = \"<bin_{}>\".format(round((bbox[0] * (self.num_bins - 1))))\n            quant_y0 = \"<bin_{}>\".format(round((bbox[1] * (self.num_bins - 1))))\n            region_coord = \"{} {}\".format(quant_x0, quant_y0)\n            final_str.append(region_coord)\n        if self.use_sep:\n            final_str = self.point_sep.join(final_str)\n        else:\n            final_str = ''.join(final_str)\n        if self.use_begin_end:\n            final_str = self.point_begin + final_str + self.point_end",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:232-257"
+    },
+    "191": {
+        "file_id": 24,
+        "content": "The code defines a class with a method `format_point` that takes a list of bounding boxes and formats them using regular expressions based on the number of bins, separator usage, and begin/end markers. The result is returned as a string representation of the formatted bounding boxes.",
+        "type": "comment"
+    },
+    "192": {
+        "file_id": 24,
+        "content": "        return final_str\n    def format_box(self, bboxes: Boxes) -> str:\n        final_str = []\n        for bbox in bboxes:\n            quant_x0 = \"<bin_{}>\".format(round((bbox[0] * (self.num_bins - 1))))\n            quant_y0 = \"<bin_{}>\".format(round((bbox[1] * (self.num_bins - 1))))\n            quant_x1 = \"<bin_{}>\".format(round((bbox[2] * (self.num_bins - 1))))\n            quant_y1 = \"<bin_{}>\".format(round((bbox[3] * (self.num_bins - 1))))\n            region_coord = \"{} {} {} {}\".format(quant_x0, quant_y0, quant_x1, quant_y1)\n            final_str.append(region_coord)\n        if self.use_sep:\n            final_str = self.box_sep.join(final_str)\n        else:\n            final_str = ''.join(final_str)\n        if self.use_begin_end:\n            final_str = self.box_begin + final_str + self.box_end\n        return final_str\n    def extract(self, string: str) -> List[Boxes]:\n        ret = []\n        for bboxes_str in self.extract_box_pat.findall(string.replace(\" \", \"\")):\n            bboxes = []\n            bbox_strs = bboxes_str.replace(self.box_begin, \"\").replace(self.box_end, \"\").split(self.box_sep)",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:258-281"
+    },
+    "193": {
+        "file_id": 24,
+        "content": "The function `format_box` takes a set of bounding boxes and converts them into strings representing quantized x and y coordinates. The resulting strings are then joined together to form the final string. The `extract` function searches for the final string within another string, extracts it, and converts it back into a list of bounding boxes.",
+        "type": "comment"
+    },
+    "194": {
+        "file_id": 24,
+        "content": "            for bbox_str in bbox_strs:\n                elems = list(map(int, re.findall(r'<bin_(\\d*?)>', bbox_str)))\n                bbox = [elem / (self.num_bins - 1) for elem in elems]\n                bboxes.append(bbox)\n            ret.append(bboxes)\n        return ret\n    def extract_point(self, string: str) -> List[Boxes]:\n        ret = []\n        for bboxes_str in self.extract_point_pat.findall(string):\n            bboxes = []\n            bbox_strs = bboxes_str.replace(self.point_begin, \"\").replace(self.point_end, \"\").split(self.point_sep)\n            for bbox_str in bbox_strs:\n                elems = list(map(int, re.findall(r'<bin_(\\d*?)>', bbox_str)))\n                bbox = [elem / (self.num_bins - 1) for elem in elems]\n                bboxes.append(bbox)\n            ret.append(bboxes)\n        return ret\n    def post_process_model_tokenizer(self, model, preprocessor, model_args, training_args):\n        tokenizer = preprocessor['text']\n        additional_special_tokens = [\n            self.box_begin, self.box_sep, self.box_end,",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:282-305"
+    },
+    "195": {
+        "file_id": 24,
+        "content": "This code defines a class with methods to process box annotations for text data. The `box_process_function` method processes box annotations in the input string and returns a list of lists representing the box coordinates. The `extract_point` method extracts box annotations from the input string and returns a list of box coordinate lists. Lastly, the `post_process_model_tokenizer` method initializes a tokenizer for the model using the provided preprocessor.",
+        "type": "comment"
+    },
+    "196": {
+        "file_id": 24,
+        "content": "            self.point_begin, self.point_sep, self.point_end,\n        ]\n        for i in range(self.num_bins):\n            additional_special_tokens.append(f'<bin_{i}>')\n        smart_tokenizer_and_embedding_resize(\n            {'additional_special_tokens': additional_special_tokens},\n            tokenizer,\n            model,\n        )\n        return model, preprocessor\n# FIXME: merge into load_pretrained\ndef prepare_target_processor(\n        model,  # multimodal llm\n        preprocessor: Dict[str, Any],\n        model_args,\n        training_args,\n):\n    if not hasattr(model_args, 'target_processor'):\n        return model, preprocessor\n    target_processor = {}\n    if 'boxes' in model_args['target_processor']:\n        boxes_cfg = model_args['target_processor']['boxes']\n        boxes_processor = BOXES_PROCESSOR.build(boxes_cfg)\n        target_processor['boxes'] = boxes_processor\n        if hasattr(boxes_processor, \"post_process_model_tokenizer\"):\n            model, preprocessor = boxes_processor.post_process_model_tokenizer(",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:306-335"
+    },
+    "197": {
+        "file_id": 24,
+        "content": "This code adds additional special tokens to the model's tokenizer and resizes the embedding. It then checks if a target_processor is present in model arguments for boxes, builds a boxes_processor if it exists, and applies any necessary post-processing to the model's tokenizer.",
+        "type": "comment"
+    },
+    "198": {
+        "file_id": 24,
+        "content": "                model, preprocessor, model_args, training_args,\n            )\n    preprocessor['target'] = target_processor\n    return model, preprocessor",
+        "type": "code",
+        "location": "/mllm/dataset/process_function/box_process_function.py:336-339"
+    },
+    "199": {
+        "file_id": 24,
+        "content": "This function creates a model, preprocessor and returns both along with other arguments. The target processor is assigned to the preprocessor's 'target' attribute.",
+        "type": "comment"
+    }
+}

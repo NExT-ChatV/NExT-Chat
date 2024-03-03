@@ -1,0 +1,10 @@
+{
+    "summary": "This code launches a script using the \"accelerate\" tool to fine-tune a multimodal language model. The model is based on the \"vicuna-7b-v1.5\" checkpoint and utilizes an mm_projector for improved performance. The training will run for 2 epochs, with outputs saved in the \"./output/stage1\" directory.",
+    "details": [
+        {
+            "comment": "This code launches a script using the \"accelerate\" tool to fine-tune a multimodal language model. The model is based on the \"vicuna-7b-v1.5\" checkpoint and utilizes an mm_projector for improved performance. The training will run for 2 epochs, with outputs saved in the \"./output/stage1\" directory.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/run_stage1.sh\":0-7",
+            "content": "accelerate launch --num_processes 8 \\\n        --main_process_port 23786 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_stage1.py \\\n        --cfg-options model_args.model_name_or_path=/data/public/multimodal/multimodal_model_ckpts/vicuna-7b-v1.5 \\\n        model_args.mm_projector_depth=2 model_args.pretrained_mm_projector=/home/zhangao/model/llava/projector/vicuna1.5_7b/mm_projector.bin \\\n        --num_train_epochs 2 \\\n        --output_dir ./output/stage1"
+        }
+    ]
+}

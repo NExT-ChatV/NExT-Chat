@@ -1,0 +1,15 @@
+{
+    "summary": "This code defines `NextChatTrainer` class, inheriting from `TrainerForMMLLM`, and includes a method _save() for saving model's state dictionary, focusing on 'mm_projector', 'embed_tokens', and 'embed_in'. It creates a folder for storing MM projector weights and saves them accordingly.",
+    "details": [
+        {
+            "comment": "The code snippet defines a class called `NextChatTrainer` that inherits from `TrainerForMMLLM`. It has a method `_save()` for saving the model's state dictionary, specifically focusing on keys related to 'mm_projector', 'embed_tokens', and 'embed_in'. The saved weights are stored in the 'weight_to_save' dictionary. If distributed training is used, it saves only the model itself by unwrapping it before saving the state dictionary.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/engine/nextchat.py\":0-27",
+            "content": "import os\nfrom typing import Optional\nimport torch\nfrom transformers.trainer import unwrap_model\nfrom .base_engine import TrainerForMMLLM\nclass NextChatTrainer(TrainerForMMLLM):\n    def _save(self, output_dir: Optional[str] = None, state_dict=None):\n        if getattr(self.args, 'tune_mm_mlp_adapter', False):\n            # Save the model\n            _state_dict = state_dict\n            if _state_dict is None:\n                # Only save the model itself if we are using distributed training\n                model_to_save = unwrap_model(self.model)\n                _state_dict = model_to_save.state_dict()\n            weight_to_save = {}\n            keys_to_match = ['mm_projector', 'embed_tokens', 'embed_in']\n            for k, v in _state_dict.items():\n                if any(key_match in k for key_match in keys_to_match):\n                    weight_to_save[k] = v\n            current_folder = output_dir.split('/')[-1]\n            parent_folder = os.path.dirname(output_dir)\n            if current_folder.startswith('checkpoint-'):"
+        },
+        {
+            "comment": "This code snippet creates a folder for storing the MM projector weights and saves the weights accordingly, based on whether a specific directory exists or not. If the directory doesn't exist, it is created. Then it saves the weights in a bin file with the current folder name. If the directory exists, the weights are saved in a bin file named \"mm_projector\". The method then calls the parent class's _save() method.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/engine/nextchat.py\":28-33",
+            "content": "                mm_projector_folder = os.path.join(parent_folder, \"mm_projector\")\n                os.makedirs(mm_projector_folder, exist_ok=True)\n                torch.save(weight_to_save, os.path.join(mm_projector_folder, f'{current_folder}.bin'))\n            else:\n                torch.save(weight_to_save, os.path.join(output_dir, f'mm_projector.bin'))\n        super(NextChatTrainer, self)._save(output_dir, state_dict)"
+        }
+    ]
+}

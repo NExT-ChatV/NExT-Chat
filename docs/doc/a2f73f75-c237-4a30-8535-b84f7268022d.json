@@ -1,0 +1,10 @@
+{
+    "summary": "These lines import the 'nextchat' module from the same directory and the 'load_pretrained' function from the 'builder' module, which may be used to load pre-trained models.",
+    "details": [
+        {
+            "comment": "These lines import the 'nextchat' module from the same directory and the 'load_pretrained' function from the 'builder' module, which may be used to load pre-trained models.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/models/__init__.py\":0-2",
+            "content": "from . import nextchat\nfrom .builder import load_pretrained"
+        }
+    ]
+}

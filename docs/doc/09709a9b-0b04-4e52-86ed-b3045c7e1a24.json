@@ -1,0 +1,10 @@
+{
+    "summary": "This code defines base configurations for training, evaluation, and prediction tasks in the NExT-Chat project. It sets arguments for training arguments (False for all), model settings, and data processing. The model uses the 'nextchat_seg' type with specified model path, processes multitest datasets using PopeComputeMetrics, and applies padding and collation to the input data with specific parameters.",
+    "details": [
+        {
+            "comment": "This code defines base configurations for training, evaluation, and prediction tasks in the NExT-Chat project. It sets arguments for training arguments (False for all), model settings, and data processing. The model uses the 'nextchat_seg' type with specified model path, processes multitest datasets using PopeComputeMetrics, and applies padding and collation to the input data with specific parameters.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/config/nextchat_eval_pope.py\":0-41",
+            "content": "_base_ = ['_base_/dataset/DEFAULT_TEST_DATASET.py', '_base_/model/nextchat.py', '_base_/train/eval.py']\ntraining_args = dict(\n    output_dir='./exp/{{fileBasenameNoExtension}}',\n    do_train=False,\n    do_eval=False,\n    do_predict=False,\n    do_multi_predict=True,\n    fp16=False,\n    fp16_full_eval=False,\n    bf16=True,\n    bf16_full_eval=True,\n    per_device_eval_batch_size=8,\n)\nmodel_args = dict(\n    # type='nextchat_seg',\n    model_name_or_path=None,\n)\ndata_args = dict(\n    train=None,\n    validation=None,\n    test=None,\n    multitest={k: {'cfg': v, 'compute_metric': dict(type='PopeComputeMetrics')} for k, v in _base_.DEFAULT_TEST_POPE_VARIANT.items() if 'q_a' in k},\n    compute_metric=None,\n    # padding collator kwargs\n    collator_kwargs=dict(\n        padding=True,\n        max_length=1024,\n    ),\n    # generate config\n    gen_kwargs=dict(\n        max_new_tokens=20,\n        num_beams=1,\n    ),\n)"
+        }
+    ]
+}

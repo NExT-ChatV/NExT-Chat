@@ -1,0 +1,10 @@
+{
+    "summary": "This code launches an 8-process accelerate job with CUDA support, finetuning a machine learning model using the \"mllm/pipeline/finetune.py\" script and a specific configuration file (\"config/nextchat_eval_pope.py\"). The model's output directory is set to \"$MODEL_PATH\"/pope/. It performs evaluations with a batch size of 8 per device.",
+    "details": [
+        {
+            "comment": "This code launches an 8-process accelerate job with CUDA support, finetuning a machine learning model using the \"mllm/pipeline/finetune.py\" script and a specific configuration file (\"config/nextchat_eval_pope.py\"). The model's output directory is set to \"$MODEL_PATH\"/pope/. It performs evaluations with a batch size of 8 per device.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/eval_pope.sh\":0-7",
+            "content": "MODEL_PATH=$1\nCUDA_VISIBLE_DEVICES=\"0,1,2,3,4,5,6,7\" accelerate launch --num_processes 8 \\\n        --main_process_port 23787 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_eval_pope.py \\\n        --cfg-options model_args.model_name_or_path=$MODEL_PATH model_args.mm_projector_depth=2 \\\n        --output_dir \"$MODEL_PATH\"/pope/  --per_device_eval_batch_size 8"
+        }
+    ]
+}

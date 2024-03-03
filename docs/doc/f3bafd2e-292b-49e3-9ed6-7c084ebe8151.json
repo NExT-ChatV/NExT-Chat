@@ -1,0 +1,10 @@
+{
+    "summary": "This code adopts the LLaMA model with FlashAttn for memory efficiency. It appends the project path to sys.path, imports necessary modules, and patches the LLaMA attention with FlashAttn before calling the main function.",
+    "details": [
+        {
+            "comment": "This code adopts the LLaMA model with FlashAttn for memory efficiency. It appends the project path to sys.path, imports necessary modules, and patches the LLaMA attention with FlashAttn before calling the main function.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/pipeline/finetune_mem.py\":0-24",
+            "content": "# Adopted from https://github.com/lm-sys/FastChat. Below is the original copyright:\n# Adopted from tatsu-lab@stanford_alpaca. Below is the original copyright:\n# Make it more memory efficient by monkey patching the LLaMA model with FlashAttn.\nimport sys\nimport pathlib\nproject_path = pathlib.Path(__file__).parent.parent.parent\nsys.path.append(str(project_path))\n# Need to call this before importing transformers.\nfrom mllm.utils.llama_flash_attn_monkey_patch import replace_llama_attn_with_flash_attn\nreplace_llama_attn_with_flash_attn()\nfrom mllm.pipeline.finetune import main\n# noinspection PyUnusedLocal\ndef _mp_fn(index):\n    # For xla_spawn (TPUs)\n    main()\nif __name__ == \"__main__\":\n    main()"
+        }
+    ]
+}

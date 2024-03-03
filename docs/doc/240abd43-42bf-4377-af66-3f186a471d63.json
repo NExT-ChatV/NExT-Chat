@@ -1,0 +1,10 @@
+{
+    "summary": "This code is importing various functions and classes from the \"common\" module in the same directory. These functions and classes are used for tasks like printing trainable parameters, showing outputs, drawing bounding boxes, and more. The code appears to be part of a larger machine learning or computer vision project involving image processing and text generation.",
+    "details": [
+        {
+            "comment": "This code is importing various functions and classes from the \"common\" module in the same directory. These functions and classes are used for tasks like printing trainable parameters, showing outputs, drawing bounding boxes, and more. The code appears to be part of a larger machine learning or computer vision project involving image processing and text generation.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/mllm/utils/__init__.py\":0-11",
+            "content": "from .common import (\n    print_trainable_params,\n    show,\n    draw_bounding_boxes,\n    post_process_generate_ids,\n    decode_generate_ids,\n    smart_tokenizer_and_embedding_resize,\n    ImageBoxState,\n    bbox_draw,\n    open_image,\n    parse_boxes,\n)"
+        }
+    ]
+}

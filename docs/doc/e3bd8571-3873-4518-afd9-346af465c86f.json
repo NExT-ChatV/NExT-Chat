@@ -1,0 +1,10 @@
+{
+    "summary": "This code uses accelerate to launch two processes for finetuning a multimodal language model (mllm) with a specified configuration file (nextchat_eval_multi_rec.py) and saving the results in a specific output directory ($MODEL_PATH/rec/). The model is specified through the $MODEL_PATH environment variable, and the model depth for multi-modal projection is set to 2.",
+    "details": [
+        {
+            "comment": "This code uses accelerate to launch two processes for finetuning a multimodal language model (mllm) with a specified configuration file (nextchat_eval_multi_rec.py) and saving the results in a specific output directory ($MODEL_PATH/rec/). The model is specified through the $MODEL_PATH environment variable, and the model depth for multi-modal projection is set to 2.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/eval_rec.sh\":0-7",
+            "content": "MODEL_PATH=$1\nCUDA_VISIBLE_DEVICES=\"5,6\" accelerate launch --num_processes 2 \\\n        --main_process_port 23781 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_eval_multi_rec.py \\\n        --cfg-options model_args.model_name_or_path=$MODEL_PATH model_args.mm_projector_depth=2 \\\n        --output_dir \"$MODEL_PATH\"/rec/"
+        }
+    ]
+}

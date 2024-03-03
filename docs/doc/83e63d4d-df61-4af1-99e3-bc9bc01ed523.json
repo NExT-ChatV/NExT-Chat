@@ -1,0 +1,10 @@
+{
+    "summary": "This script launches an 8-process acceleration, running 'finetune.py' with a config from 'nextchat_stage3.py'. It uses the provided argument as the model path, sets the projector depth to 2, trains for 3 epochs, saves every 5000 steps and outputs to './output/stage3' directory.",
+    "details": [
+        {
+            "comment": "This script launches an 8-process acceleration, running 'finetune.py' with a config from 'nextchat_stage3.py'. It uses the provided argument as the model path, sets the projector depth to 2, trains for 3 epochs, saves every 5000 steps and outputs to './output/stage3' directory.",
+            "location": "\"/media/root/Prima/works/NExT-Chat/docs/src/run_stage3.sh\":0-7",
+            "content": "accelerate launch --num_processes 8 \\\n        --main_process_port 23786 \\\n        mllm/pipeline/finetune.py \\\n        config/nextchat_stage3.py \\\n        --cfg-options model_args.model_name_or_path=$1 \\\n        model_args.mm_projector_depth=2  \\\n        --num_train_epochs 3 --save_steps 5000 \\\n        --output_dir ./output/stage3"
+        }
+    ]
+}

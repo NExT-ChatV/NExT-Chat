@@ -1,0 +1,545 @@
+{
+    "300": {
+        "file_id": 31,
+        "content": "                # the stopping condition was reached, let's stop\n                break\n            # let's add the example at the current index of the `source_idx`-th dataset\n            indices.append(current_index[source_idx] + offsets[source_idx])\n            current_index[source_idx] += 1\n            # we've ran out of examples for the current dataset, let's update our boolean array and bring the current_index back to 0\n            if current_index[source_idx] >= lengths[source_idx]:\n                is_exhausted[source_idx] = True\n                current_index[source_idx] = 0\n    return indices\n@DATASETS.register_module()\nclass SubSet(TorchSubset):\n    def __init__(self, cfg, portion, do_shuffle=True, seed=42):\n        assert 0 < portion <= 1\n        dataset = DATASETS.build(cfg=cfg)\n        target_len = int(len(dataset) * portion)\n        if do_shuffle:\n            rng = np.random.default_rng(seed)\n            indices = list(range(len(dataset)))\n            rng.shuffle(indices)\n            indices = indices[:target_len]",
+        "type": "code",
+        "location": "/mllm/dataset/utils/concatenate_dataset.py:144-168"
+    },
+    "301": {
+        "file_id": 31,
+        "content": "This code defines a class SubSet that inherits from TorchSubset. It takes a configuration, portion of the data to use, whether to shuffle and seed for randomization. It creates an instance of the specified dataset, calculates the target length based on portion, if shuffling is enabled it shuffles indices using np.random.default_rng and selects the first N indices to create a subset of the data with the specified portion.",
+        "type": "comment"
+    },
+    "302": {
+        "file_id": 31,
+        "content": "        else:\n            indices = list(range(target_len))\n        super().__init__(dataset, indices)\n@DATASETS.register_module()\nclass ConcatDatasetWithShuffle(TorchSubset):\n    _repr_indent = 4\n    def __init__(self, cfgs, seed=42, portion=1):\n        self.cfgs = cfgs\n        self.seed = seed\n        self.portion = portion\n        dataset = TorchConcatDataset([DATASETS.build(cfg) for cfg in cfgs])\n        target_len = int(len(dataset) * portion)\n        indices = list(range(len(dataset))) * int(np.ceil(portion))\n        rng = np.random.default_rng(seed)\n        rng.shuffle(indices)\n        indices = indices[:target_len]\n        super().__init__(dataset, indices)\n__all__ = ['ConcatDataset', 'InterleaveDateset', 'SubSet', 'ConcatDatasetWithShuffle']",
+        "type": "code",
+        "location": "/mllm/dataset/utils/concatenate_dataset.py:169-192"
+    },
+    "303": {
+        "file_id": 31,
+        "content": "This code defines a ConcatDatasetWithShuffle class, which concatenates multiple datasets based on provided configurations and then shuffles the indices to create a new dataset. The portion parameter determines the proportion of data to include from the concatenated dataset.",
+        "type": "comment"
+    },
+    "304": {
+        "file_id": 32,
+        "content": "/mllm/dataset/utils/flickr30k_entities_utils.py",
+        "type": "filepath"
+    },
+    "305": {
+        "file_id": 32,
+        "content": "This code processes Flickr30kEntities dataset, extracts and organizes information from XML files, and flattens annotations for efficient data storage.",
+        "type": "summary"
+    },
+    "306": {
+        "file_id": 32,
+        "content": "import os\nimport re\nimport xml.etree.ElementTree as ET\nfrom typing import Dict, List\nfrom tqdm import tqdm\ndef get_sentence_data(fn):\n    \"\"\"\n    Parses a sentence file from the Flickr30K Entities dataset\n    input:\n      fn - full file path to the sentence file to parse\n    output:\n      a list of dictionaries for each sentence with the following fields:\n          sentence - the original sentence\n          phrases - a list of dictionaries for each phrase with the\n                    following fields:\n                      phrase - the text of the annotated phrase\n                      first_word_index - the position of the first word of\n                                         the phrase in the sentence\n                      phrase_id - an identifier for this phrase\n                      phrase_type - a list of the coarse categories this \n                                    phrase belongs to\n    \"\"\"\n    with open(fn, 'r', encoding='utf8') as f:\n        sentences = f.read().split('\\n')\n    annotations = []\n    for sentence in sentences:",
+        "type": "code",
+        "location": "/mllm/dataset/utils/flickr30k_entities_utils.py:1-33"
+    },
+    "307": {
+        "file_id": 32,
+        "content": "This code is parsing a sentence file from the Flickr30K Entities dataset and returning a list of dictionaries for each sentence. Each dictionary contains fields such as the original sentence, phrases (with their text, first word index, phrase ID, and phrase type), and coarse categories that the phrase belongs to.",
+        "type": "comment"
+    },
+    "308": {
+        "file_id": 32,
+        "content": "        if not sentence:\n            continue\n        first_word = []\n        phrases = []\n        phrase_id = []\n        phrase_type = []\n        words = []\n        current_phrase = []\n        add_to_phrase = False\n        for token in sentence.split():\n            if add_to_phrase:\n                if token[-1] == ']':\n                    add_to_phrase = False\n                    token = token[:-1]\n                    current_phrase.append(token)\n                    phrases.append(' '.join(current_phrase))\n                    current_phrase = []\n                else:\n                    current_phrase.append(token)\n                words.append(token)\n            else:\n                if token[0] == '[':\n                    add_to_phrase = True\n                    first_word.append(len(words))\n                    parts = token.split('/')\n                    phrase_id.append(parts[1][3:])\n                    phrase_type.append(parts[2:])\n                else:\n                    words.append(token)\n        sentence_data = {'sentence': ' '.join(words), 'phrases': []}",
+        "type": "code",
+        "location": "/mllm/dataset/utils/flickr30k_entities_utils.py:34-66"
+    },
+    "309": {
+        "file_id": 32,
+        "content": "This code is parsing sentences and extracting phrases. It identifies the beginning of a phrase by checking for '[', then adds words to the current phrase until it finds ']'. The extracted phrases are stored in a list, along with their type and id. Finally, the original sentence and its parsed phrases are stored in a dictionary.",
+        "type": "comment"
+    },
+    "310": {
+        "file_id": 32,
+        "content": "        for index, phrase, p_id, p_type in zip(first_word, phrases, phrase_id, phrase_type):\n            sentence_data['phrases'].append({'first_word_index': index,\n                                             'phrase': phrase,\n                                             'phrase_id': p_id,\n                                             'phrase_type': p_type})\n        annotations.append(sentence_data)\n    return annotations\ndef get_annotations(fn):\n    \"\"\"\n    Parses the xml files in the Flickr30K Entities dataset\n    input:\n      fn - full file path to the annotations file to parse\n    output:\n      dictionary with the following fields:\n          scene - list of identifiers which were annotated as\n                  pertaining to the whole scene\n          nobox - list of identifiers which were annotated as\n                  not being visible in the image\n          boxes - a dictionary where the fields are identifiers\n                  and the values are its list of boxes in the \n                  [xmin ymin xmax ymax] format",
+        "type": "code",
+        "location": "/mllm/dataset/utils/flickr30k_entities_utils.py:67-93"
+    },
+    "311": {
+        "file_id": 32,
+        "content": "The code parses Flickr30K Entities dataset XML files, extracting scene identifiers, non-visible identifiers, and box coordinates for each identifier. It stores the extracted information in a dictionary format with appropriate fields.",
+        "type": "comment"
+    },
+    "312": {
+        "file_id": 32,
+        "content": "    \"\"\"\n    tree = ET.parse(fn)\n    root = tree.getroot()\n    size_container = root.findall('size')[0]\n    anno_info = {'boxes': {}, 'scene': [], 'nobox': []}\n    for size_element in size_container:\n        anno_info[size_element.tag] = int(size_element.text)\n    for object_container in root.findall('object'):\n        for names in object_container.findall('name'):\n            box_id = names.text\n            box_container = object_container.findall('bndbox')\n            if len(box_container) > 0:\n                if box_id not in anno_info['boxes']:\n                    anno_info['boxes'][box_id] = []\n                xmin = int(box_container[0].findall('xmin')[0].text) - 1\n                ymin = int(box_container[0].findall('ymin')[0].text) - 1\n                xmax = int(box_container[0].findall('xmax')[0].text) - 1\n                ymax = int(box_container[0].findall('ymax')[0].text) - 1\n                anno_info['boxes'][box_id].append([xmin, ymin, xmax, ymax])\n            else:\n                nobndbox = int(object_container.findall('nobndbox')[0].text)",
+        "type": "code",
+        "location": "/mllm/dataset/utils/flickr30k_entities_utils.py:94-115"
+    },
+    "313": {
+        "file_id": 32,
+        "content": "This code parses an XML file and extracts information about objects, their bounding boxes, and 'nobox' labels. It initializes a dictionary for storing the extracted data including object sizes, box coordinates, and 'nobox' labels. If a box ID is not already in the dictionary, it creates an empty list to store its coordinates. Then, it extracts the bounding box coordinates and adjusts them by subtracting 1. For objects without bounding boxes, it adds their 'nobndbox' label to the dictionary.",
+        "type": "comment"
+    },
+    "314": {
+        "file_id": 32,
+        "content": "                if nobndbox > 0:\n                    anno_info['nobox'].append(box_id)\n                scene = int(object_container.findall('scene')[0].text)\n                if scene > 0:\n                    anno_info['scene'].append(box_id)\n    return anno_info\ndef get_ann_path(idx, *, annotation_dir=\"\"):\n    return os.path.join(annotation_dir, rf'Annotations/{idx}.xml')\ndef get_sen_path(idx, *, annotation_dir=\"\"):\n    return os.path.join(annotation_dir, rf\"Sentences/{idx}.txt\")\ndef get_img_path(idx, *, image_dir=\"\"):\n    return os.path.join(image_dir, rf'{idx}.jpg')\nPHRASE_ST_PLACEHOLDER = '<ph_st>'\nPHRASE_ED_PLACEHOLDER = '<ph_ed>'\ndef flatten_annotation(annotation_dir, indexes):\n    data = []\n    for index in tqdm(indexes):\n        image_id = index\n        ann_path = get_ann_path(index, annotation_dir=annotation_dir)\n        sen_path = get_sen_path(index, annotation_dir=annotation_dir)\n        anns = get_annotations(ann_path)\n        sens = get_sentence_data(sen_path)\n        for sen in sens:\n           ",
+        "type": "code",
+        "location": "/mllm/dataset/utils/flickr30k_entities_utils.py:116-153"
+    },
+    "315": {
+        "file_id": 32,
+        "content": "Function flattens annotations for a given index list, retrieves information from .xml and .txt files, and appends them to the data list. It processes each index in the list using tqdm progress bar, gets the annotation path, sentence path, loads annotations, and extracts sentence data.",
+        "type": "comment"
+    },
+    "316": {
+        "file_id": 32,
+        "content": " pids = list(set(phrase['phrase_id'] for phrase in sen['phrases'] if phrase['phrase_id'] in anns['boxes']))\n            boxes_mapping: Dict[str, List[int]] = {}\n            boxes_filtered: List[List[int]] = []\n            for pid in pids:\n                v = anns['boxes'][pid]\n                mapping = []\n                for box in v:\n                    mapping.append(len(boxes_filtered))\n                    boxes_filtered.append(box)\n                boxes_mapping[pid] = mapping\n            boxes_seq: List[List[int]] = []\n            for phrase in sen['phrases']:\n                if not phrase['phrase_id'] in anns['boxes']:\n                    continue\n                pid = phrase['phrase_id']\n                boxes_seq.append(boxes_mapping[pid])\n            sent = list(sen['sentence'].split())\n            for phrase in sen['phrases'][::-1]:\n                if not phrase['phrase_id'] in anns['boxes']:\n                    continue\n                span = [phrase['first_word_index'], phrase['first_word_index'] + len(phrase['phrase'].split())]",
+        "type": "code",
+        "location": "/mllm/dataset/utils/flickr30k_entities_utils.py:153-175"
+    },
+    "317": {
+        "file_id": 32,
+        "content": "Iterates through sentences, filters phrase IDs present in 'anns'['boxes'], maps filtered phrase IDs to box coordinates, stores box sequences for phrases with corresponding IDs, and creates a list of sentence words.",
+        "type": "comment"
+    },
+    "318": {
+        "file_id": 32,
+        "content": "                sent[span[0]:span[1]] = [f\"{PHRASE_ST_PLACEHOLDER}{' '.join(sent[span[0]:span[1]])}{PHRASE_ED_PLACEHOLDER}\"]\n            sent_converted = \" \".join(sent)\n            assert len(re.findall(PHRASE_ST_PLACEHOLDER, sent_converted)) \\\n                   == len(re.findall(PHRASE_ED_PLACEHOLDER, sent_converted)) \\\n                   == len(boxes_seq), f\"error when parse: {sent_converted}, {boxes_seq}, {sen}, {anns}\"\n            assert sent_converted.replace(PHRASE_ST_PLACEHOLDER, \"\").replace(PHRASE_ED_PLACEHOLDER, \"\") == sen['sentence']\n            item = {\n                'id': len(data),\n                'image_id': image_id,\n                'boxes': boxes_filtered,\n                'sentence': sent_converted,\n                'boxes_seq': boxes_seq,\n            }\n            data.append(item)\n    return data\nif __name__ == '__main__':\n    filenames = [\n        r'D:\\home\\dataset\\flickr30kentities\\train.txt',\n        r'D:\\home\\dataset\\flickr30kentities\\val.txt',\n        r'D:\\home\\dataset\\flickr30kentities\\test.txt',",
+        "type": "code",
+        "location": "/mllm/dataset/utils/flickr30k_entities_utils.py:176-200"
+    },
+    "319": {
+        "file_id": 32,
+        "content": "This code processes the Flickr30kEntities dataset, replacing phrase spans with placeholders and converting sentences to a required format for further processing. It ensures correct placement of placeholders and validates the sentence against ground truth. Finally, it appends the processed data into a list before returning.",
+        "type": "comment"
+    },
+    "320": {
+        "file_id": 32,
+        "content": "    ]\n    for filename in filenames:\n        annotation_dir = r'D:\\home\\dataset\\flickr30kentities'\n        indexes = [line.strip() for line in open(filename, 'r', encoding='utf8')]\n        flatten_annotation(annotation_dir, indexes)",
+        "type": "code",
+        "location": "/mllm/dataset/utils/flickr30k_entities_utils.py:201-205"
+    },
+    "321": {
+        "file_id": 32,
+        "content": "This code reads filenames, then for each filename it opens the file in read mode, converts lines to a list of stripped strings, and finally calls flatten_annotation function passing annotation_dir and indexes as arguments.",
+        "type": "comment"
+    },
+    "322": {
+        "file_id": 33,
+        "content": "/mllm/dataset/utils/io.py",
+        "type": "filepath"
+    },
+    "323": {
+        "file_id": 33,
+        "content": "The function read_img_general() reads images from given paths, handling S3 fetching and exceptions. It initializes Ceph client if necessary, logs time taken.",
+        "type": "summary"
+    },
+    "324": {
+        "file_id": 33,
+        "content": "import sys\nimport time\nimport logging\nimport cv2\nimport numpy as np\nfrom PIL import Image\nfrom PIL import ImageFile\nImageFile.LOAD_TRUNCATED_IMAGES = True\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\nlogging.basicConfig(\n    format=\"%(asctime)s - %(levelname)s - %(name)s - %(message)s\",\n    datefmt=\"%m/%d/%Y %H:%M:%S\",\n    handlers=[logging.StreamHandler(sys.stdout), ],\n)\ndef read_img_general(img_path):\n    if \"s3://\" in img_path:\n        cv_img = read_img_ceph(img_path)\n        # noinspection PyUnresolvedReferences\n        return Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))\n    else:\n        try:\n            return Image.open(img_path).convert('RGB')\n        except Exception as E:\n            print(E)\n            return Image.open(\"tmp.jpg\").convert('RGB')\nclient = None\ndef read_img_ceph(img_path):\n    init_ceph_client_if_needed()\n    img_bytes = client.get(img_path)\n    assert img_bytes is not None, f\"Please check image at {img_path}\"\n    img_mem_view = memoryview(img_bytes)\n    img_array = np.frombuffer(img_mem_view, np.uint8)",
+        "type": "code",
+        "location": "/mllm/dataset/utils/io.py:1-40"
+    },
+    "325": {
+        "file_id": 33,
+        "content": "Function read_img_general() reads an image from a given path, either by opening the file or fetching it from S3 using ceph client if the path contains \"s3://\". The function handles potential exceptions and provides fallback options for reading images.",
+        "type": "comment"
+    },
+    "326": {
+        "file_id": 33,
+        "content": "    # noinspection PyUnresolvedReferences\n    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)\n    return img\ndef init_ceph_client_if_needed():\n    global client\n    if client is None:\n        logger.info(f\"initializing ceph client ...\")\n        st = time.time()\n        from petrel_client.client import Client  # noqa\n        client = Client(enable_mc=True)\n        ed = time.time()\n        logger.info(f\"initialize client cost {ed - st:.2f} s\")",
+        "type": "code",
+        "location": "/mllm/dataset/utils/io.py:41-54"
+    },
+    "327": {
+        "file_id": 33,
+        "content": "Initializes Ceph client if it's null and logs time taken.",
+        "type": "comment"
+    },
+    "328": {
+        "file_id": 34,
+        "content": "/mllm/dataset/utils/mixin.py",
+        "type": "filepath"
+    },
+    "329": {
+        "file_id": 34,
+        "content": "The code defines a mixin class for question templates and creates MInstrDataset, which extends Dataset, utilizes the mixin, reads/processes data from files with indexing, length checks, and provides dataset details.",
+        "type": "summary"
+    },
+    "330": {
+        "file_id": 34,
+        "content": "import json\nimport os\nimport numpy as np\nfrom torch.utils.data import Dataset\nfrom .io import read_img_general\nclass QuestionTemplateMixin:\n    def __init__(\n            self,\n            *args,\n            template_string=None,\n            template_file=None,\n            max_dynamic_size=None,\n            placeholders=None,\n            **kwargs\n    ):\n        super().__init__(*args, **kwargs)\n        self.template_string = template_string\n        self.template_file = template_file\n        self.max_dynamic_size = max_dynamic_size\n        self.placeholders = placeholders\n        if template_string is None and template_file is None:\n            raise ValueError(\"assign either template_string or template_file\")\n        if template_string is not None and template_file is not None:\n            raise ValueError(f\"assign both template_string and template_file:\\nstring:{template_string}\\nfile:{template_file}\")\n        if template_string is not None:\n            self.templates = [self.template_string]\n        else:\n            assert template_file is not None",
+        "type": "code",
+        "location": "/mllm/dataset/utils/mixin.py:1-32"
+    },
+    "331": {
+        "file_id": 34,
+        "content": "This code defines a class called \"QuestionTemplateMixin\" that serves as a mixin for other classes, allowing them to support question templates. The constructor accepts arguments like template_string, template_file, max_dynamic_size, and placeholders. If both template_string and template_file are provided, it raises an error. It also checks if either of them is None and raises a ValueError in that case.",
+        "type": "comment"
+    },
+    "332": {
+        "file_id": 34,
+        "content": "            self.templates = json.load(open(template_file, 'r', encoding='utf8'))\n        if self.max_dynamic_size is not None:\n            self.templates = self.templates[: self.max_dynamic_size]\n        # sanity check\n        assert self.placeholders is not None\n        for template in self.templates:\n            for placeholder in placeholders:\n                assert str(template).count(placeholder) == 1, f\"template: {template}\\nplaceholder:{placeholder}\"\n    def get_template(self):\n        import random\n        return random.choice(self.templates)\n    def template_nums(self):\n        return len(self.templates)\nclass MInstrDataset(QuestionTemplateMixin, Dataset):\n    _repr_indent = 4\n    def __init__(self, filename, image_folder=None, seed=None, **kwargs):\n        super().__init__(**kwargs)\n        self.filename = filename\n        self.image_folder = image_folder\n        self.rng = np.random.default_rng(seed)\n        self.data = []\n        with open(filename, 'r', encoding='utf8') as f:\n            # for line in tqdm(f, desc=f'{self.__class__.__name__} loading ann {self.filename}'):",
+        "type": "code",
+        "location": "/mllm/dataset/utils/mixin.py:33-62"
+    },
+    "333": {
+        "file_id": 34,
+        "content": "The code defines a class, MInstrDataset, which extends the Dataset class and implements two methods: get_template() and template_nums(). The class also uses the QuestionTemplateMixin mixin. It loads templates from a file, performs sanity checks, and initializes data. The __init__ method takes arguments like filename, image_folder, seed, etc., and sets up the random number generator for data manipulation.",
+        "type": "comment"
+    },
+    "334": {
+        "file_id": 34,
+        "content": "            for line in f:\n                self.data.append(line)\n    def get_raw_item(self, index):\n        return json.loads(self.data[index])\n    def get_image(self, image_path):\n        if self.image_folder is not None:\n            image_path = os.path.join(self.image_folder, image_path)\n        image = read_img_general(image_path)\n        return image\n    def get_template(self):\n        return self.rng.choice(self.templates)\n    def __getitem__(self, index):\n        raise NotImplementedError\n    def __len__(self):\n        return len(self.data)\n    def __repr__(self) -> str:\n        head = \"Dataset \" + self.__class__.__name__\n        body = [\n            f\"Number of datapoints: {self.__len__()}\",\n            f\"ann file: {self.filename}\"\n        ]\n        if self.image_folder is not None:\n            body.append(f\"image folder: {self.image_folder}\")\n        body += self.extra_repr().splitlines()\n        lines = [head] + [\" \" * self._repr_indent + line for line in body]\n        return \"\\n\".join(lines)\n    # noinspection PyMethodMayBeStatic",
+        "type": "code",
+        "location": "/mllm/dataset/utils/mixin.py:63-96"
+    },
+    "335": {
+        "file_id": 34,
+        "content": "The code defines a class with methods to read and process data from files. It has features for getting raw items, images, templates, and supports indexing and length checks. The __repr__ method provides information about the dataset such as number of datapoints and file locations.",
+        "type": "comment"
+    },
+    "336": {
+        "file_id": 34,
+        "content": "    def extra_repr(self) -> str:\n        return \"\"",
+        "type": "code",
+        "location": "/mllm/dataset/utils/mixin.py:97-98"
+    },
+    "337": {
+        "file_id": 34,
+        "content": "This method returns an empty string as the extra representation of the object.",
+        "type": "comment"
+    },
+    "338": {
+        "file_id": 35,
+        "content": "/mllm/dataset/utils/transform.py",
+        "type": "filepath"
+    },
+    "339": {
+        "file_id": 35,
+        "content": "This code contains image and bounding box transformation functions for the NExT-Chat dataset, performing cropping, flipping, area checks, dictionary updates, maintains order consistency, resizes with constraints, preserves integrity, and has custom transforms for resizing, cropping, and flipping.",
+        "type": "summary"
+    },
+    "340": {
+        "file_id": 35,
+        "content": "# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved\n\"\"\"\nTransforms and data augmentation for both image + bbox.\n\"\"\"\nfrom typing import Dict, Any, Tuple, Optional\nfrom PIL import Image\nfrom ..root import TRANSFORMS\nimport random\nimport PIL\nimport torch\nimport torchvision.transforms as T\nimport torchvision.transforms.functional as F\nfrom mllm.utils.box_ops import box_xyxy_to_cxcywh\nfrom mllm.utils.box_ops import interpolate\ndef de_norm_box_xyxy(box, *, w, h):\n    x1, y1, x2, y2 = box\n    x1 = x1 * w\n    x2 = x2 * w\n    y1 = y1 * h\n    y2 = y2 * h\n    box = x1, y1, x2, y2\n    return box\ndef box_xywh_to_xyxy(box, *, w=None, h=None):\n    x, y, bw, bh = box\n    x2 = x + bw\n    y2 = y + bh\n    if w is not None:\n        x2 = min(x2, w)\n    if h is not None:\n        y2 = min(y2, h)\n    box = x, y, x2, y2\n    return box\ndef norm_box_xyxy(box, *, w, h):\n    x1, y1, x2, y2 = box\n    # Calculate the normalized coordinates with min-max clamping\n    norm_x1 = max(0.0, min(x1 / w, 1.0))\n    norm_y1 = max(0.0, min(y1 / h, 1.0))",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:1-50"
+    },
+    "341": {
+        "file_id": 35,
+        "content": "This code defines functions for transforming image and bounding box coordinates. It includes functions for normalizing and denormalizing bounding box coordinates, converting between xywh and xyxy formats, and applying common image transforms. The code is part of the NExT-Chat dataset utilities and uses libraries such as PIL and torchvision for image processing.",
+        "type": "comment"
+    },
+    "342": {
+        "file_id": 35,
+        "content": "    norm_x2 = max(0.0, min(x2 / w, 1.0))\n    norm_y2 = max(0.0, min(y2 / h, 1.0))\n    # Return the normalized box coordinates\n    # normalized_box = (round(norm_x1, 3), round(norm_y1, 3), round(norm_x2, 3), round(norm_y2, 3))\n    normalized_box = (norm_x1, norm_y1, norm_x2, norm_y2)\n    return normalized_box\ndef norm_point_xyxy(point, *, w, h):\n    x, y = point\n    norm_x = max(0.0, min(x / w, 1.0))\n    norm_y = max(0.0, min(y / h, 1.0))\n    point = norm_x, norm_y\n    return point\ndef expand2square(pil_img, background_color=(255, 255, 255)):\n    width, height = pil_img.size\n    if width == height:\n        return pil_img\n    elif width > height:\n        result = Image.new(pil_img.mode, (width, width), background_color)\n        result.paste(pil_img, (0, (width - height) // 2))\n        return result\n    else:\n        result = Image.new(pil_img.mode, (height, height), background_color)\n        result.paste(pil_img, ((height - width) // 2, 0))\n        return result\ndef box_xyxy_expand2square(box, *, w, h):\n    if w == h:",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:51-83"
+    },
+    "343": {
+        "file_id": 35,
+        "content": "This code includes functions for normalizing box coordinates, normalizing a point (x, y) and expanding an image to a square shape. The normalized_box function takes in x1, y1, x2, y2 coordinates of a rectangle and normalizes them between 0 and 1. The norm_point_xyxy function normalizes an (x, y) coordinate in the same way. The expand2square function takes an image and expands it to a square shape by either extending the width or height while preserving aspect ratio and centering the image. The box_xyxy_expand2square function checks if w is equal to h, assuming a rectangular image.",
+        "type": "comment"
+    },
+    "344": {
+        "file_id": 35,
+        "content": "        return box\n    if w > h:\n        x1, y1, x2, y2 = box\n        y1 += (w - h) // 2\n        y2 += (w - h) // 2\n        box = x1, y1, x2, y2\n        return box\n    assert w < h\n    x1, y1, x2, y2 = box\n    x1 += (h - w) // 2\n    x2 += (h - w) // 2\n    box = x1, y1, x2, y2\n    return box\ndef point_xy_expand2square(point, *, w, h):\n    pseudo_box = (point[0], point[1], point[0], point[1])\n    expanded_box = box_xyxy_expand2square(box=pseudo_box, w=w, h=h)\n    expanded_point = (expanded_box[0], expanded_box[1])\n    return expanded_point\n@TRANSFORMS.register_module()\nclass Expand2square:\n    def __init__(self, background_color=(255, 255, 255)):\n        self.background_color = background_color\n    def __call__(self, image: Image.Image, labels: Dict[str, Any] = None) -> Tuple[Image.Image, Optional[Dict[str, Any]]]:\n        width, height = image.size\n        processed_image = expand2square(image, background_color=self.background_color)\n        if labels is None:\n            return processed_image, labels\n        if 'boxes' in labels:",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:84-116"
+    },
+    "345": {
+        "file_id": 35,
+        "content": "This code defines a transform function that expands an image or bounding box to a square by adjusting the position of its bottom-right and top-left corners. The function can also be applied to individual points, as shown in the point_xy_expand2square function. The Expand2square class is registered as a module transform and takes an optional background color argument.",
+        "type": "comment"
+    },
+    "346": {
+        "file_id": 35,
+        "content": "            bboxes = [box_xyxy_expand2square(bbox, w=width, h=height) for bbox in labels['boxes']]\n            labels['boxes'] = bboxes\n        if 'points' in labels:\n            points = [point_xy_expand2square(point, w=width, h=height) for point in labels['points']]\n            labels['points'] = points\n        return processed_image, labels\ndef crop(image, target, region):\n    cropped_image = F.crop(image, *region)\n    if target is None:\n        return cropped_image, None, True\n    target = target.copy()\n    i, j, h, w = region\n    # should we do something wrt the original size?\n    target[\"size\"] = torch.tensor([h, w])\n    fields = [\"labels\", \"area\", \"iscrowd\"]\n    if \"boxes\" in target:\n        boxes = torch.tensor(target[\"boxes\"])\n        max_size = torch.as_tensor([w, h], dtype=torch.float32)\n        cropped_boxes = boxes - torch.as_tensor([j, i, j, i])\n        cropped_boxes = torch.min(cropped_boxes.reshape(-1, 2, 2), max_size)\n        cropped_boxes = cropped_boxes.clamp(min=0)\n        area = (cropped_boxes[:, 1, :] - cropped_boxes[:, 0, :]).prod(dim=1)",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:117-146"
+    },
+    "347": {
+        "file_id": 35,
+        "content": "This function transforms bounding boxes and optionally points in labels, expanding them to square format if necessary. It then returns the processed image and modified labels. The crop() function crops an image based on a given region and target, ensuring that the target's size is correctly updated according to the cropped region. It also checks if the original image should be resized or not.",
+        "type": "comment"
+    },
+    "348": {
+        "file_id": 35,
+        "content": "        target[\"boxes\"] = cropped_boxes.reshape(-1, 4)\n        target[\"area\"] = area\n        fields.append(\"boxes\")\n    if \"masks\" in target:\n        # FIXME should we update the area here if there are no boxes?\n        target['masks'] = target['masks'][:, i:i + h, j:j + w]\n        fields.append(\"masks\")\n    all_box_reserved = True\n    # remove elements for which the boxes or masks that have zero area\n    if \"boxes\" in target or \"masks\" in target:\n        # favor boxes selection when defining which elements to keep\n        # this is compatible with previous implementation\n        if \"boxes\" in target:\n            cropped_boxes = target['boxes'].reshape(-1, 2, 2)\n            keep = torch.all(cropped_boxes[:, 1, :] > cropped_boxes[:, 0, :], dim=1)\n        else:\n            keep = target['masks'].flatten(1).any(1)\n        # for field in fields:\n        #     target[field] = target[field][keep]\n        all_box_reserved = keep.all()\n    return cropped_image, target, all_box_reserved\ndef hflip(image, target):\n    flipped_image = F.hflip(image)",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:147-175"
+    },
+    "349": {
+        "file_id": 35,
+        "content": "This code performs cropping, horizontal flipping, and removes elements with zero area in images and targets. It also checks if there are boxes or masks and updates the area accordingly. It preserves the order of elements using fields for transforms consistency.",
+        "type": "comment"
+    },
+    "350": {
+        "file_id": 35,
+        "content": "    if target is None:\n        return flipped_image, None\n    w, h = image.size\n    target = target.copy()\n    if \"boxes\" in target:\n        boxes = torch.tensor(target[\"boxes\"])\n        boxes = boxes[:, [2, 1, 0, 3]] * torch.as_tensor([-1, 1, -1, 1]) + torch.as_tensor([w, 0, w, 0])\n        target[\"boxes\"] = boxes\n    if \"masks\" in target:\n        target['masks'] = target['masks'].flip(-1)\n    return flipped_image, target\ndef resize(image, target, size, max_size=None):\n    # size can be min_size (scalar) or (w, h) tuple\n    def get_size_with_aspect_ratio(image_size, size, max_size=None):\n        w, h = image_size\n        if max_size is not None:\n            min_original_size = float(min((w, h)))\n            max_original_size = float(max((w, h)))\n            if max_original_size / min_original_size * size > max_size:\n                size = int(round(max_size * min_original_size / max_original_size))\n        if (w <= h and w == size) or (h <= w and h == size):\n            return (h, w)\n        if w < h:\n            ow = size",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:177-209"
+    },
+    "351": {
+        "file_id": 35,
+        "content": "This code flips the input image and updates the target dictionary if it contains 'boxes' or 'masks'. It also performs resizing, considering aspect ratio and max size constraints. The function returns the flipped image and updated target.",
+        "type": "comment"
+    },
+    "352": {
+        "file_id": 35,
+        "content": "            oh = int(size * h / w)\n        else:\n            oh = size\n            ow = int(size * w / h)\n        return (oh, ow)\n    def get_size(image_size, size, max_size=None):\n        if isinstance(size, (list, tuple)):\n            return size[::-1]\n        else:\n            return get_size_with_aspect_ratio(image_size, size, max_size)\n    size = get_size(image.size, size, max_size)\n    rescaled_image = F.resize(image, size)\n    if target is None:\n        return rescaled_image, None\n    ratios = tuple(float(s) / float(s_orig) for s, s_orig in zip(rescaled_image.size, image.size))\n    ratio_width, ratio_height = ratios\n    target = target.copy()\n    if \"boxes\" in target:\n        boxes = torch.tensor(target[\"boxes\"])\n        scaled_boxes = boxes * torch.as_tensor([ratio_width, ratio_height, ratio_width, ratio_height])\n        target[\"boxes\"] = scaled_boxes\n    if \"area\" in target:\n        area = target[\"area\"]\n        scaled_area = area * (ratio_width * ratio_height)\n        target[\"area\"] = scaled_area\n    h, w = size",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:210-243"
+    },
+    "353": {
+        "file_id": 35,
+        "content": "This code resizes an image while maintaining its aspect ratio. It takes the original image size, target size, and maximum size as inputs. If a target is provided, it scales the bounding boxes and area according to the new image dimensions.",
+        "type": "comment"
+    },
+    "354": {
+        "file_id": 35,
+        "content": "    target[\"size\"] = torch.tensor([h, w])\n    if \"masks\" in target:\n        target['masks'] = interpolate(\n            target['masks'][:, None].float(), size, mode=\"nearest\")[:, 0] > 0.5\n    return rescaled_image, target\ndef pad(image, target, padding):\n    # assumes that we only pad on the bottom right corners\n    padded_image = F.pad(image, (0, 0, padding[0], padding[1]))\n    if target is None:\n        return padded_image, None\n    target = target.copy()\n    # should we do something wrt the original size?\n    target[\"size\"] = torch.tensor(padded_image.size[::-1])\n    if \"masks\" in target:\n        target['masks'] = torch.nn.functional.pad(target['masks'], (0, padding[0], 0, padding[1]))\n    return padded_image, target\nclass RandomSizeCrop(object):\n    def __init__(self, min_size: int, max_size: int):\n        self.min_size = min_size\n        self.max_size = max_size\n    def __call__(self, img: PIL.Image.Image, target: dict):\n        w = random.randint(self.min_size, min(img.width, self.max_size))\n        h = random.randint(self.min_size, min(img.height, self.max_size))",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:244-274"
+    },
+    "355": {
+        "file_id": 35,
+        "content": "The code defines a function to resize and pad an image with its target. It includes a RandomSizeCrop class that randomly crops the input image based on given minimum and maximum size constraints. The resize function interpolates the image to a specified size, optionally modifying masks if present. The pad function pads the bottom right corners of the image and adjusts the target size accordingly.",
+        "type": "comment"
+    },
+    "356": {
+        "file_id": 35,
+        "content": "        region = T.RandomCrop.get_params(img, [h, w])\n        for i in range(3):\n            rst_img, rst_target, all_box_reserved = crop(img, target, region)\n            if all_box_reserved:\n                return rst_img, rst_target\n        return img, target\nclass RandomHorizontalFlip(object):\n    def __init__(self, p=0.5):\n        self.p = p\n    def __call__(self, img, target):\n        if random.random() < self.p:\n            return hflip(img, target)\n        return img, target\nclass RandomResize(object):\n    def __init__(self, sizes, max_size=None):\n        assert isinstance(sizes, (list, tuple))\n        self.sizes = sizes\n        self.max_size = max_size\n    def __call__(self, img, target=None):\n        size = random.choice(self.sizes)\n        return resize(img, target, size, self.max_size)\nclass RandomSelect(object):\n    \"\"\"\n    Randomly selects between transforms1 and transforms2,\n    with probability p for transforms1 and (1 - p) for transforms2\n    \"\"\"\n    def __init__(self, transforms1, transforms2, p=0.5):",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:275-309"
+    },
+    "357": {
+        "file_id": 35,
+        "content": "The code defines three classes: `RandomHorizontalFlip`, `RandomResize`, and `RandomSelect`. These classes are used to perform various random transformations on images for data augmentation. The transformations include horizontal flipping, resizing, and selecting between different transformations randomly with given probabilities.",
+        "type": "comment"
+    },
+    "358": {
+        "file_id": 35,
+        "content": "        self.transforms1 = transforms1\n        self.transforms2 = transforms2\n        self.p = p\n    def __call__(self, img, target):\n        if random.random() < self.p:\n            return self.transforms1(img, target)\n        return self.transforms2(img, target)\nclass Compose(object):\n    def __init__(self, transforms):\n        self.transforms = transforms\n    def __call__(self, image, target):\n        for t in self.transforms:\n            image, target = t(image, target)\n        return image, target\n    def __repr__(self):\n        format_string = self.__class__.__name__ + \"(\"\n        for t in self.transforms:\n            format_string += \"\\n\"\n            format_string += \"    {0}\".format(t)\n        format_string += \"\\n)\"\n        return format_string\n@TRANSFORMS.register_module()\nclass TrainAug:\n    def __init__(self, background_color=(255, 255, 255)):\n        self.resize_ratio = 0.25\n        self.background_color = background_color\n        self.random_size_crop = Compose(\n                                            [",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:310-343"
+    },
+    "359": {
+        "file_id": 35,
+        "content": "The code defines a train augmentation class that randomly applies two sets of transformations to an image and its target, with a specified probability. It also includes a composition function for applying multiple transforms sequentially. The transforms1 and transforms2 are instances of the Compose class, which allows for easy addition of different transformation operations like resize, crop, flip, etc. The TrainAug class is registered in TRANSFORMS module for further usage.",
+        "type": "comment"
+    },
+    "360": {
+        "file_id": 35,
+        "content": "                                                RandomResize([400, 500, 600]),\n                                                RandomSizeCrop(384, 1333),\n                                            ]\n                                        )\n        self.random_horizontal = RandomHorizontalFlip()\n    def __call__(self, image: Image.Image, labels: Dict[str, Any] = None) -> Tuple[Image.Image, Optional[Dict[str, Any]]]:\n        # if random.random() > self.resize_ratio:\n        #     image, labels = self.random_size_crop(image, labels)\n        image, labels = self.random_horizontal(image, labels)\n        width, height = image.size\n        processed_image = expand2square(image, background_color=self.background_color)\n        if labels is None:\n            return processed_image, labels\n        if 'boxes' in labels:\n            bboxes = [box_xyxy_expand2square(bbox, w=width, h=height) for bbox in labels['boxes']]\n            labels['boxes'] = bboxes\n        if 'points' in labels:\n            points = [point_xy_expand2square(point, w=width, h=height) for point in labels['points']]",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:344-363"
+    },
+    "361": {
+        "file_id": 35,
+        "content": "This code defines a custom transform that applies random resizing, cropping, and horizontal flipping to an image. It utilizes the RandomResize, RandomSizeCrop, and RandomHorizontalFlip functions for transformation. The resulting processed image is returned along with any labels if provided.",
+        "type": "comment"
+    },
+    "362": {
+        "file_id": 35,
+        "content": "            labels['points'] = points\n        return processed_image, labels",
+        "type": "code",
+        "location": "/mllm/dataset/utils/transform.py:364-365"
+    },
+    "363": {
+        "file_id": 35,
+        "content": "This code adds the 'points' label to the 'labels' dictionary based on the value of the 'points' variable, and then returns the processed_image and labels as output.",
+        "type": "comment"
+    },
+    "364": {
+        "file_id": 36,
+        "content": "/mllm/demo/bash_demo.py",
+        "type": "filepath"
+    },
+    "365": {
+        "file_id": 36,
+        "content": "This code imports necessary modules, defines model parameters, initializes a NextChatInference model, and provides an example input for testing the model. It also includes instructions to print the response and save the generated image if needed. The IPython.embed() function is used to pause execution and allow manual interaction with the interpreter.",
+        "type": "summary"
+    },
+    "366": {
+        "file_id": 36,
+        "content": "from demo_util import NextChatInference\nimport sys, os\nmodel_path, vit_path = sys.argv[1], sys.argv[2]\nmodel = NextChatInference(model_path, vit_path, 576)\n# Please follow the example here\n# input = {\"text\": \"What is the possible relationship between the two people? Please include object locations.\", \"image\": \"./COCO_val2014_000000222628.jpg\"}\n# response, boxes, masks, ret_img = model(input)\n# print(response)\n# if ret_img is not None:\n#     ret_img.save(\"demo.png\")\nimport IPython\nIPython.embed()",
+        "type": "code",
+        "location": "/mllm/demo/bash_demo.py:1-16"
+    },
+    "367": {
+        "file_id": 36,
+        "content": "This code imports necessary modules, defines model parameters, initializes a NextChatInference model, and provides an example input for testing the model. It also includes instructions to print the response and save the generated image if needed. The IPython.embed() function is used to pause execution and allow manual interaction with the interpreter.",
+        "type": "comment"
+    },
+    "368": {
+        "file_id": 37,
+        "content": "/mllm/demo/demo_util.py",
+        "type": "filepath"
+    },
+    "369": {
+        "file_id": 37,
+        "content": "The code imports libraries, sets up NextChat model, defines ML-LM parameters, prepares preprocessor for text and images, handles quantization, configures devices, includes image processing tasks, and allows customization, utilizing image processing techniques and pre-built models to generate AI chat system responses including response images. It lacks output image saving model implementation details.",
+        "type": "summary"
+    },
+    "370": {
+        "file_id": 37,
+        "content": "import json\nimport numbers\nimport os\nimport re\nimport sys\nimport logging\nimport time\nimport argparse\nimport tempfile\nfrom pathlib import Path\nfrom typing import List, Any, Union\nimport torch\nimport numpy as np\nimport gradio as gr\nfrom PIL import Image\nfrom PIL import ImageDraw, ImageFont\nfrom mmengine import Config\nimport transformers\n# from transformers import BitsAndBytesConfig\nimport torch.nn.functional as F\nsys.path.append(str(Path(__file__).parent.parent.parent))\nfrom mllm.dataset.process_function import PlainBoxFormatter\nfrom mllm.dataset.builder import prepare_interactive\nfrom mllm.utils import draw_bounding_boxes, ImageBoxState, bbox_draw, open_image, parse_boxes\nfrom mllm.models.builder.build_nextchat import load_pretrained_nextchat\nlog_level = logging.ERROR\ntransformers.logging.set_verbosity(log_level)\ntransformers.logging.enable_default_handler()\ntransformers.logging.enable_explicit_format()\nTEMP_FILE_DIR = Path(__file__).parent / 'temp'\nTEMP_FILE_DIR.mkdir(parents=True, exist_ok=True)\n#########################################",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:1-38"
+    },
+    "371": {
+        "file_id": 37,
+        "content": "The code is importing necessary libraries and modules, setting the logging level, creating a temporary directory for files, and loading pre-trained NextChat model. It also defines some directories and configurations for using ML-LM (Masked Language Model). The code seems to be part of an AI or machine learning application related to image processing and natural language processing tasks.",
+        "type": "comment"
+    },
+    "372": {
+        "file_id": 37,
+        "content": "# mllm model init\n#########################################\ndef build_model(model_name_or_path, vit_model_path, image_token_len=256, load_in_8bit=False):\n    model_args = Config(dict(\n        type='nextchat',\n        version='v1',\n        # checkpoint config\n        cache_dir=None,\n        model_name_or_path=model_name_or_path,\n        vision_tower=vit_model_path,\n        pretrain_mm_mlp_adapter=None,\n        sam_path=None,\n        # model config\n        mm_vision_select_layer=-2,\n        model_max_length=2048,\n        # finetune config\n        freeze_backbone=False,\n        tune_mm_mlp_adapter=False,\n        freeze_mm_mlp_adapter=False,\n        # data process config\n        is_multimodal=True,\n        sep_image_conv_front=False,\n        image_token_len=image_token_len,\n        mm_use_im_start_end=True,\n        target_processor=dict(\n            boxes=dict(type='PlainBoxFormatter'),\n        ),\n        process_func_args=dict(\n            conv=dict(type='ChatConvProcess'),\n            target=dict(type='BoxFormatProcess'),",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:39-74"
+    },
+    "373": {
+        "file_id": 37,
+        "content": "This function builds an ML model using the specified `model_name_or_path` and `vit_model_path`. It allows for customization with various parameters including image token length, 8-bit model loading, and other configuration options related to backbone, MLP adapter tuning, data processing, etc.",
+        "type": "comment"
+    },
+    "374": {
+        "file_id": 37,
+        "content": "            text=dict(type='ChatTextProcess'),\n            image=dict(type='ChatImageProcessor'),\n        ),\n        conv_args=dict(\n            conv_template='vicuna_v1.1',\n            transforms=dict(type='Expand2square'),\n            tokenize_kwargs=dict(truncation_size=None),\n        ),\n        gen_kwargs_set_pad_token_id=True,\n        gen_kwargs_set_bos_token_id=True,\n        gen_kwargs_set_eos_token_id=True,\n    ))\n    training_args = Config(dict(\n        bf16=True,\n        fp16=False,\n        device='cuda',\n        fsdp=None,\n    ))\n    # if load_in_8bit:\n    #     quantization_kwargs = dict(\n    #         quantization_config=BitsAndBytesConfig(\n    #             load_in_8bit=True,\n    #         )\n    #     )\n    # else:\n    #     quantization_kwargs = dict()\n    quantization_kwargs = dict()\n    model, preprocessor = load_pretrained_nextchat(model_args, training_args, **quantization_kwargs)\n    if not getattr(model, 'is_quantized', False):\n        model.to(dtype=torch.bfloat16, device=torch.device('cuda'))\n    if not getattr(model.model.get_vision_tower(), 'is_quantized', False):",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:75-109"
+    },
+    "375": {
+        "file_id": 37,
+        "content": "This code is loading and configuring a NextChat model with specific arguments, training arguments, and quantization kwargs. The model is loaded using the `load_pretrained_nextchat` function, and if necessary, converted to bfloat16 for efficient inference on GPUs.",
+        "type": "comment"
+    },
+    "376": {
+        "file_id": 37,
+        "content": "        model.model.get_vision_tower().to(dtype=torch.bfloat16, device=torch.device('cuda'))\n    print(f\"LLM device: {model.device}, is_quantized: {getattr(model, 'is_quantized', False)}, is_loaded_in_4bit: {getattr(model, 'is_loaded_in_4bit', False)}, is_loaded_in_8bit: {getattr(model, 'is_loaded_in_8bit', False)}\")\n    print(f\"vision device: {model.model.get_vision_tower().device}, is_quantized: {getattr(model.model.get_vision_tower(), 'is_quantized', False)}, is_loaded_in_4bit: {getattr(model, 'is_loaded_in_4bit', False)}, is_loaded_in_8bit: {getattr(model, 'is_loaded_in_8bit', False)}\")\n    preprocessor['target'] = {'boxes': PlainBoxFormatter()}\n    tokenizer = preprocessor['text']\n    return model, model_args, preprocessor, tokenizer\n#########################################\n# demo utils\n#########################################\ndef parse_text(text):\n    text = text.replace(\"<image>\", \"&lt;image&gt;\")\n    return text\ndef de_norm_box_xyxy(box, *, w, h):\n    x1, y1, x2, y2 = box\n    x1 = x1 * w\n    x2 = x2 * w",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:110-131"
+    },
+    "377": {
+        "file_id": 37,
+        "content": "This code sets the LLM and vision model devices, checks if they are quantized or loaded in specific bit formats, and then prepares a preprocessor for text and images. The parse_text function normalizes image bounding boxes and de_norm_box_xyxy function denormalizes bounding boxes.",
+        "type": "comment"
+    },
+    "378": {
+        "file_id": 37,
+        "content": "    y1 = y1 * h\n    y2 = y2 * h\n    box = x1, y1, x2, y2\n    return box\ndef expand2square(pil_img, background_color=(255, 255, 255)):\n    width, height = pil_img.size\n    if width == height:\n        return pil_img\n    elif width > height:\n        result = Image.new(pil_img.mode, (width, width), background_color)\n        result.paste(pil_img, (0, (width - height) // 2))\n        return result\n    else:\n        result = Image.new(pil_img.mode, (height, height), background_color)\n        result.paste(pil_img, ((height - width) // 2, 0))\n        return result\ndef box_xyxy_expand2square(box, *, w, h):\n    if w == h:\n        return box\n    if w > h:\n        x1, y1, x2, y2 = box\n        y1 += (w - h) // 2\n        y2 += (w - h) // 2\n        box = x1, y1, x2, y2\n        return box\n    assert w < h\n    x1, y1, x2, y2 = box\n    x1 += (h - w) // 2\n    x2 += (h - w) // 2\n    box = x1, y1, x2, y2\n    return box\ndef resize_pil_img(pil_img: Image.Image, *, w, h):\n    old_height, old_width = pil_img.height, pil_img.width\n    new_height, new_width = (h, w)",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:132-171"
+    },
+    "379": {
+        "file_id": 37,
+        "content": "`resize_pil_img` defines a function that takes in a PIL image and resizes it to the specified width and height. It first checks the current aspect ratio of the image, then determines the new dimensions based on either the width or height being provided as arguments. `expand2square` is a function that expands an image to a square shape by creating a new image with the larger dimension matching the width, then pasting the original image into the center. `box_xyxy_expand2square` adjusts the bounding box of an object in an image based on whether the image is being expanded to a square aspect ratio. If the width becomes greater than height, it adjusts the y coordinates; if the height becomes greater, it adjusts the x coordinates.",
+        "type": "comment"
+    },
+    "380": {
+        "file_id": 37,
+        "content": "    if (new_height, new_width) == (old_height, old_width):\n        return pil_img\n    return pil_img.resize((new_width, new_height))\ndef resize_box_xyxy(boxes, *, w, h, ow, oh):\n    old_height, old_width = (oh, ow)\n    new_height, new_width = (h, w)\n    if (new_height, new_width) == (old_height, old_width):\n        return boxes\n    w_ratio = new_width / old_width\n    h_ratio = new_height / old_height\n    out_boxes = []\n    for box in boxes:\n        x1, y1, x2, y2 = box\n        x1 = x1 * w_ratio\n        x2 = x2 * w_ratio\n        y1 = y1 * h_ratio\n        y2 = y2 * h_ratio\n        nb = (x1, y1, x2, y2)\n        out_boxes.append(nb)\n    return out_boxes\ndef binarize(x):\n    return (x != 0).astype('uint8') * 255\ndef de_transform_mask(orgw, orgh, mask):\n    long_side = max(orgw, orgh)\n    short_side = min(orgw, orgh)\n    pad = (long_side - short_side) // 2\n    mask = F.interpolate(mask, [long_side, long_side], mode=\"bilinear\", align_corners=False)\n    mask = mask > 0\n    mask[mask > 0] = 255\n    if orgw < orgh:\n        mask = mask[..., :, pad: short_side + pad]",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:172-208"
+    },
+    "381": {
+        "file_id": 37,
+        "content": "Code snippet resizes images, adjusts bounding box coordinates, binarizes pixels, and transforms masks. This code seems to be part of an image processing library for object detection tasks.",
+        "type": "comment"
+    },
+    "382": {
+        "file_id": 37,
+        "content": "    else:\n        mask = mask[..., pad: short_side + pad, :]\n    # mask = mask.transpose(2, 3)\n    # print(mask.shape)\n    return mask.squeeze(1)\ndef de_occlude_masks(masks):\n    union_mask = torch.zeros_like(masks[0]).int()\n    for i, m in enumerate(masks):\n        m[m.int() + union_mask.int() >= 2] = 0\n        print((m.int() + union_mask.int() >= 2).sum())\n        union_mask = m.int() + union_mask\n    return masks\ndef de_transform_box(orgw, orgh, boxes):\n    long_side = max(orgw, orgh)\n    short_side = min(orgw, orgh)\n    pad = (long_side - short_side) // 2\n    boxes = boxes * long_side\n    if orgw < orgh:\n        boxes[:, 0] -= pad\n        boxes[:, 2] -= pad\n    else:\n        boxes[:, 1] -= pad\n        boxes[:, 3] -= pad\n    return boxes\ndef draw_boxes(img, _boxes, texts, colors):\n    assert img is not None\n    _img_draw = ImageDraw.Draw(img)\n    font = ImageFont.truetype(os.path.join(os.path.dirname(__file__), 'assets/DejaVuSansMono.ttf'), size=36)\n    for bid, box in enumerate(_boxes):\n        _img_draw.rectangle((box[0], box[1], box[2], box[3]), outline=colors[bid % len(colors)], width=8)",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:209-244"
+    },
+    "383": {
+        "file_id": 37,
+        "content": "Code snippet from NExT-Chat/mllm/demo/demo_util.py:208-243 includes functions for handling mask and bounding box manipulations. The code contains a function that handles mask transformations based on image dimensions, occludes masks by union operation, and a function to draw boxes with texts on an image. It is related to image processing and computer vision tasks.",
+        "type": "comment"
+    },
+    "384": {
+        "file_id": 37,
+        "content": "        anno_text = texts[bid]\n        _img_draw.rectangle(\n            (box[0], box[3] - int(font.size * 1.2), box[0] + int((len(anno_text) + 0.8) * font.size * 0.6), box[3]),\n            outline=colors[bid % len(colors)], fill=colors[bid % len(colors)], width=8)\n        _img_draw.text((box[0] + int(font.size * 0.2), box[3] - int(font.size * 1.2)), anno_text, font=font,\n                       fill=(255, 255, 255))\n    return img\ndef post_process_response(response):\n    if \"<at> <boxes>\" not in response:\n        return response.replace(\"<\", \"&lt;\").replace(\">\", \"&gt;\")\n    splits = response.split(\"<at> <boxes>\")\n    to_concat = [f\"[{i}]\" for i in range(len(splits) - 1)]\n    rst = [splits[i // 2] if i % 2 == 0 else to_concat[i // 2]\n           for i in range(len(splits) + len(to_concat))]\n    rst = \"\".join(rst)\n    rst = rst.replace(\"<\", \"&lt;\").replace(\">\", \"&gt;\")\n    return rst\ndef model_predict(model, model_args, tokenizer, preprocessor, image, text,\n                  temperature=0.75, top_p=0.7, top_k=5, boxes=None, boxes_seq=None, iou_thres=0.3):",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:245-267"
+    },
+    "385": {
+        "file_id": 37,
+        "content": "Code snippet from \"NExT-Chat/mllm/demo/demo_util.py\":244-266 defines a function that takes an image, text, and bounding boxes as input and adds the text within the bounding boxes to the image using the provided font and color. The post_process_response function processes responses containing \"<at> <boxes>\", splitting them into separate parts and joining them back together after HTML encoding. The model_predict function takes a model, model_args, tokenizer, preprocessor, image, text, temperature, top_p, top_k, boxes, boxes_seq, and iou_thres as input and returns the predicted output for the provided image and text.",
+        "type": "comment"
+    },
+    "386": {
+        "file_id": 37,
+        "content": "    image = open_image(image)\n    orgw, orgh = image.width, image.height\n    conversation = prepare_interactive(model_args, preprocessor)\n    conversation.set_image(image)\n    conversation.append_message(role=conversation.roles[0],\n                                message=text, boxes=boxes, boxes_seq=boxes_seq)\n    inputs = conversation.to_model_input()\n    inputs.update({\"temperature\": temperature, \"top_p\": top_p, \"top_k\": top_k})\n    output_ids, masks, iou_predictions, boxes = model.generate(**inputs)\n    response = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0]\n    # print(response)\n    # print(boxes)\n    filename_grounding = None\n    ret_image = None\n    if boxes is not None:\n        # remove low quality masks\n        # print(masks.shape, iou_predictions.squeeze().shape)\n        for idx, iou in enumerate(iou_predictions.squeeze(1)):\n            if iou < iou_thres:\n                masks[idx, :] = 0\n        boxes = de_transform_box(orgw, orgh, boxes)\n        masks = de_transform_mask(orgw, orgh, masks)",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:268-292"
+    },
+    "387": {
+        "file_id": 37,
+        "content": "This code segment opens an image, prepares a conversation for interactive model input, generates output and masks from the model's response, removes low-quality masks, deformats boxes and masks, and performs grounding by assigning the generated response to specific regions of the image.",
+        "type": "comment"
+    },
+    "388": {
+        "file_id": 37,
+        "content": "        # masks = de_occlude_masks(masks)\n        colors = [\"#F76566\", \"#18ACBA\", \"#9400D3\", \"#454926\", \"#4E72B8\"]\n        if len(colors) < len(boxes):\n            colors += [\"#F76566\"] * (len(boxes) - len(colors))\n        from torchvision.transforms import PILToTensor, ToPILImage\n        Timage = PILToTensor()(image)\n        from torchvision.utils import draw_segmentation_masks\n        res = draw_segmentation_masks(Timage, masks, colors=colors, alpha=0.5)\n        res = ToPILImage()(res)\n        res = draw_boxes(res, boxes, [str(i) for i in range(len(boxes))], colors)\n        ret_image = res\n        # timestamp = int(time.time())\n        # filename_grounding = f\"tmp/sever_imgs/{timestamp}.jpg\"\n        # if not os.path.exists(\"tmp/sever_imgs/\"):\n        #     os.makedirs(\"tmp/sever_imgs/\")\n        # res.save(filename_grounding)\n    return response, boxes, masks, ret_image\nclass NextChatInference(object):\n    def __init__(self, model_path, vit_path, image_token_len=576, **kwargs):\n        self.model, self.",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:293-318"
+    },
+    "389": {
+        "file_id": 37,
+        "content": "Code segment demonstrates the application of image processing and visualization techniques to generate a response image for an AI chat system. It utilizes PILToTensor and ToPILImage transforms to convert image data, applies color-coded masks and boxes using draw_segmentation_masks and draw_boxes functions, but does not save the final output image as intended due to missing model implementation details in the provided code snippet.",
+        "type": "comment"
+    },
+    "390": {
+        "file_id": 37,
+        "content": "model_args, self.preprocessor, self.tokenizer = build_model(model_path, vit_path, image_token_len=image_token_len)\n    def __call__(self, input_tensor, **forward_params):\n        forward_params = {}\n        temperature = forward_params.pop(\"temperature\", 0.8)\n        top_p = forward_params.pop(\"top_p\", 0.7)\n        top_k = forward_params.pop(\"top_k\", 5)\n        boxes = forward_params.pop(\"boxes\", [])\n        boxes_seq = forward_params.pop(\"boxes_seq\", [])\n        iou_thres = forward_params.pop(\"iou_thres\", 0.3)\n        image, text = input_tensor[\"image\"], input_tensor[\"text\"]\n        response, boxes, masks, ret_img = model_predict(self.model, self.model_args,\n                                          self.tokenizer, self.preprocessor,\n                                          image, text,\n                                          temperature=temperature,\n                                          top_p=top_p,\n                                          top_k=top_k,\n                                          iou_thres=iou_thres,",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:318-335"
+    },
+    "391": {
+        "file_id": 37,
+        "content": "This code creates an object that takes input tensors and uses a pre-built model to generate responses based on an image and text. It also allows for temperature, top_p, and top_k parameters as well as boxes and boxes_seq lists to filter results by IOU threshold. The method calls the 'model_predict' function with the necessary arguments to get the response, boxes, masks, and potentially return the original image.",
+        "type": "comment"
+    },
+    "392": {
+        "file_id": 37,
+        "content": "                                          boxes=boxes, boxes_seq=boxes_seq)\n        return response, boxes, masks, ret_img",
+        "type": "code",
+        "location": "/mllm/demo/demo_util.py:336-337"
+    },
+    "393": {
+        "file_id": 37,
+        "content": "These lines are returning a response, bounding boxes, masks, and a possibly retouched image from an image classification function.",
+        "type": "comment"
+    },
+    "394": {
+        "file_id": 38,
+        "content": "/mllm/demo/web_demo.py",
+        "type": "filepath"
+    },
+    "395": {
+        "file_id": 38,
+        "content": "This code creates a GUI chatbot with image recognition and response capabilities using GR library, featuring grounding, captioning, explaining, and region captioning tasks. The chatbot includes text prompts, sliders, button functionality for responses, and 2 output areas. It initializes a new demo object, sets inputs, and launches on a specified server with sharing enabled.",
+        "type": "summary"
+    },
+    "396": {
+        "file_id": 38,
+        "content": "import os, sys\nimport pathlib\nimport logging\nimport argparse\nfrom pathlib import Path\nimport gradio as gr\nimport transformers\nproject_path = pathlib.Path(__file__).parent.parent.parent\nsys.path.append(str(project_path))\nfrom mllm.utils import ImageBoxState, bbox_draw, parse_boxes\nfrom mllm.demo.demo_util import NextChatInference\nimport time\nlog_level = logging.ERROR\ntransformers.logging.set_verbosity(log_level)\ntransformers.logging.enable_default_handler()\ntransformers.logging.enable_explicit_format()\nTEMP_FILE_DIR = Path(__file__).parent / 'temp'\nTEMP_FILE_DIR.mkdir(parents=True, exist_ok=True)\n#########################################\n# mllm model init\n#########################################\nparser = argparse.ArgumentParser(\"NExT-Chat Web Demo\")\nparser.add_argument('--load_in_8bit', action='store_true')\nparser.add_argument('--server_name', default=None)\nparser.add_argument('--server_port', type=int, default=None)\nparser.add_argument('--model_path', type=str, required=True)\nparser.add_argument('--vit_path', type=str, required=True)",
+        "type": "code",
+        "location": "/mllm/demo/web_demo.py:1-32"
+    },
+    "397": {
+        "file_id": 38,
+        "content": "This code imports necessary modules, sets the log level for transformers library, creates a directory for temporary files, and defines argument parsing using argparse. It also initializes the NExT-Chat model with required arguments like load_in_8bit, server_name, server_port, model_path, and vit_path.",
+        "type": "comment"
+    },
+    "398": {
+        "file_id": 38,
+        "content": "parser.add_argument('--image_token_len', type=int, default=576)\nargs = parser.parse_args()\nprint(args)\npipe = NextChatInference(args.model_path, args.vit_path, args.image_token_len)\ndef post_process_response(response):\n    if \"<at> <boxes>\" not in response:\n        return response.replace(\"<\", \"&lt;\").replace(\">\", \"&gt;\")\n    splits = response.split(\"<at> <boxes>\")\n    to_concat = [f\"[{i}]\" for i in range(len(splits) - 1)]\n    rst = [splits[i // 2] if i % 2 == 0 else to_concat[i // 2]\n           for i in range(len(splits) + len(to_concat))]\n    rst = \"\".join(rst)\n    rst = rst.replace(\"<\", \"&lt;\").replace(\">\", \"&gt;\")\n    return rst\ndef chat_one_turn(\n        input_text,\n        temperature,\n        top_p,\n        top_k,\n        input_image,\n        history,\n        hidden_image,\n        state,\n):\n    boxes = state[\"ibs\"].boxes\n    gpt_input_text, boxes_seq = parse_boxes(input_text)\n    inputs = {\"image\":input_image['image'], \"text\": gpt_input_text}\n    response, _, _, img = pipe(inputs, temperature=temperature, top_p=top_p, top_k=top_k,",
+        "type": "code",
+        "location": "/mllm/demo/web_demo.py:33-67"
+    },
+    "399": {
+        "file_id": 38,
+        "content": "This code initializes a NextChatInference object, defines a post-processing function for responses containing boxes, and a chat_one_turn function that takes input text, temperature, top_p, top_k, an image, history, hidden image, and state as parameters. The code uses the state's \"ibs\" boxes to parse the input text and prepare inputs for the pipe model.",
+        "type": "comment"
+    }
+}
